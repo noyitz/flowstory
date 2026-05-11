@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlowStory — Quick Start</title>
+<style>
+:root{--bg:#0a0a0f;--bg2:#161b22;--bg3:#21262d;--text:#e2e8f0;--dim:#8b949e;--border:#21262d;--accent:#58a6ff;--green:#3fb950}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);line-height:1.7;padding:0}
+.top-bar{padding:12px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;position:sticky;top:0;background:var(--bg);z-index:10}
+.top-bar a{color:var(--dim);font-size:14px;text-decoration:none}
+.top-bar a:hover{color:var(--accent)}
+.top-bar .logo{font-weight:700;color:var(--text);font-size:16px}
+.container{max-width:720px;margin:0 auto;padding:48px 24px 80px}
+h1{font-size:36px;font-weight:800;letter-spacing:-1px;margin-bottom:8px}
+h1 .gradient{background:linear-gradient(135deg,#58a6ff,#d2a8ff,#f0883e);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.tagline{font-size:18px;color:var(--dim);margin-bottom:48px}
+h2{font-size:20px;font-weight:700;margin:40px 0 12px;display:flex;align-items:center;gap:10px}
+.step-badge{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,#58a6ff22,#d2a8ff22);border:1px solid #58a6ff44;display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--accent);flex-shrink:0}
+p{margin-bottom:16px;color:var(--dim);font-size:15px}
+.prompt-box{position:relative;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;margin:16px 0 32px;font-family:'SF Mono',Menlo,Consolas,monospace;font-size:13px;line-height:1.7;white-space:pre-wrap;word-break:break-word;color:var(--text);max-height:500px;overflow-y:auto}
+.prompt-box::-webkit-scrollbar{width:6px}
+.prompt-box::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:3px}
+.copy-btn{position:sticky;top:0;float:right;padding:8px 20px;background:var(--accent);color:#0a0a0f;border:none;border-radius:8px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;transition:all .2s;z-index:2}
+.copy-btn:hover{filter:brightness(1.15)}
+.copy-btn.copied{background:var(--green)}
+.placeholder{color:#f0883e;font-weight:600}
+.example-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;margin:12px 0 24px;font-family:'SF Mono',Menlo,Consolas,monospace;font-size:13px;line-height:1.7;white-space:pre-wrap;color:var(--dim)}
+.tip{display:flex;gap:12px;padding:16px;background:#58a6ff08;border:1px solid #58a6ff22;border-radius:10px;margin:16px 0;font-size:14px;color:var(--text)}
+.tip-icon{font-size:18px;flex-shrink:0}
+.links{display:flex;gap:12px;flex-wrap:wrap;margin:32px 0}
+.link-btn{padding:10px 24px;border:1px solid var(--border);border-radius:8px;font-size:14px;color:var(--dim);text-decoration:none;transition:all .2s}
+.link-btn:hover{border-color:var(--accent);color:var(--accent)}
+.demo-link{border-color:var(--green);color:var(--green)}
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <a href="../" class="logo">FlowStory</a>
+  <a href="https://github.com/noyitz/flowstory">GitHub</a>
+  <a href="../CLAUDE.md">Schema Docs</a>
+</div>
+
+<div class="container">
+
+<h1><span class="gradient">Quick Start</span></h1>
+<p class="tagline">Generate an animated flow diagram in 2 minutes. No install needed.</p>
+
+<h2><span class="step-badge">1</span> Open Claude Code</h2>
+<p>Use the CLI (<code style="background:var(--bg3);padding:2px 8px;border-radius:4px;font-size:13px;color:var(--accent)">claude</code>), desktop app, IDE extension, or <a href="https://claude.ai/code" target="_blank">claude.ai/code</a>. Start a <strong>new session</strong>.</p>
+
+<h2><span class="step-badge">2</span> Paste This Prompt</h2>
+<p>Copy the prompt below, replace the placeholders with your links and description, and paste into Claude Code.</p>
+
+<div class="prompt-box" id="prompt-text"><button class="copy-btn" id="copy-btn" onclick="copyPrompt()">Copy</button>Read this guide: https://raw.githubusercontent.com/noyitz/flowstory/main/CLAUDE.md
+
+Then read this template: https://raw.githubusercontent.com/noyitz/flowstory/main/examples/ai-gateway/index.html
+
+Generate a SINGLE self-contained HTML file at ./flow.html that:
+- Loads CSS from: https://noyitz.github.io/flowstory/templates/style.css
+- Loads FlowStory from: https://noyitz.github.io/flowstory/src/index.js
+- Embeds the diagram JSON inline in the script (NOT as a separate file)
+- Auto-plays in loop mode on page load
+- Uses viz.load(diagram) to load the inline JSON object
+
+Here are the resources to learn the architecture from:
+
+RESOURCES:
+- <span class="placeholder">&lt;PASTE YOUR LINKS HERE&gt;</span>
+
+DESCRIPTION:
+<span class="placeholder">&lt;DESCRIBE THE FLOW YOU WANT&gt;</span>
+
+After generating, open the file in a browser to test it.</div>
+
+<h2><span class="step-badge">3</span> Fill In Your Details</h2>
+<p>Replace the placeholders with your actual repos, docs, and a description of what you want to visualize.</p>
+
+<div class="example-box"><strong style="color:var(--text)">Example:</strong>
+
+RESOURCES:
+- https://github.com/my-org/my-project/blob/main/docs/architecture.md
+- https://github.com/my-org/my-project/blob/main/docs/diagrams/auth-flow.mmd
+
+DESCRIPTION:
+Show the user authentication flow: browser -> API Gateway -> OAuth
+provider -> token exchange -> session created -> redirect to dashboard.
+Include an error case for expired tokens (401 -> redirect to login).</div>
+
+<h2><span class="step-badge">4</span> Iterate with Screenshots</h2>
+<p>After the first generation, use the screenshot feedback loop to refine:</p>
+
+<div class="tip">
+  <span class="tip-icon">&#128247;</span>
+  <div>Open <code style="background:var(--bg3);padding:2px 6px;border-radius:4px;font-size:13px;color:var(--accent)">flow.html</code> in your browser. Take a screenshot. Paste it back into Claude. Say what to change: <em>"move the auth box down"</em>, <em>"arrow 3 overlaps arrow 5"</em>, <em>"add an error flow"</em>. Usually 3-5 rounds gets you a polished result.</div>
+</div>
+
+<h2><span class="step-badge">5</span> Share</h2>
+<p>The generated HTML is fully self-contained. Share it however you want:</p>
+<ul style="margin:0 0 16px 20px;color:var(--dim);font-size:14px">
+  <li>Email it — anyone can open it in a browser</li>
+  <li>Host on GitHub Pages — push to a repo, enable Pages</li>
+  <li>Drop in a docs folder — works as a static file</li>
+</ul>
+
+<div class="links">
+  <a href="https://noyitz.github.io/ai-gateway-docs/ai-gateway-flow.html" target="_blank" class="link-btn demo-link">&#9654; Live Demo</a>
+  <a href="https://github.com/noyitz/flowstory" target="_blank" class="link-btn">GitHub</a>
+  <a href="../CLAUDE.md" class="link-btn">Schema Reference</a>
+  <a href="agent-prompt.md" class="link-btn">Agent Prompt (other AI tools)</a>
+</div>
+
+</div>
+
+<script>
+function copyPrompt() {
+  const el = document.getElementById('prompt-text');
+  const btn = document.getElementById('copy-btn');
+  const text = el.innerText.replace('Copy', '').trim();
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+</script>
+
+</body>
+</html>
