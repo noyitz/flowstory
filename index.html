@@ -63,9 +63,10 @@ body.light .demo-card-stats span{background:#0969da08;border-color:#0969da22}
 .demo-card-play-label{font-size:12px;color:var(--dim);font-weight:600}
 
 /* Comic conversation */
-.comic{padding:60px 24px;max-width:640px;margin:0 auto}
+.comic{padding:60px 24px;max-width:640px;margin:0 auto;overflow:hidden}
 .comic-title{text-align:center;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;font-weight:600;margin-bottom:32px}
-.bubble-row{display:flex;gap:12px;margin-bottom:20px;align-items:flex-start}
+.bubble-row{display:flex;gap:12px;margin-bottom:20px;align-items:flex-start;opacity:0;transform:translateY(30px);transition:opacity .5s ease,transform .5s ease}
+.bubble-row.visible{opacity:1;transform:translateY(0)}
 .bubble-row.right{flex-direction:row-reverse}
 .avatar{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;border:2px solid var(--border2)}
 .avatar-blue{background:#58a6ff22;border-color:#58a6ff44}
@@ -427,6 +428,27 @@ function runStep(){
   step++;
   timer=setTimeout(runStep,900);
 }
+
+// Chat bubble animation — reveal one by one when scrolled into view
+(function(){
+  const rows=document.querySelectorAll('.bubble-row');
+  let revealed=0,chatTimer=null;
+  function revealNext(){
+    if(revealed>=rows.length)return;
+    rows[revealed].classList.add('visible');
+    revealed++;
+    if(revealed<rows.length)chatTimer=setTimeout(revealNext,800);
+  }
+  const observer=new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting&&revealed===0){
+        observer.disconnect();
+        revealNext();
+      }
+    });
+  },{threshold:0.2});
+  if(rows.length>0)observer.observe(rows[0]);
+})();
 
 for(let i=0;i<8;i++)spawnAmbient();
 draw();
