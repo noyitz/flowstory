@@ -5,76 +5,103 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FlowStory — AI-Agent-First Animated Flow Diagrams</title>
 <style>
+:root {
+  --bg: #0a0a0f; --bg2: #161b22; --bg3: #21262d;
+  --text: #e2e8f0; --dim: #8b949e; --muted: #484f58;
+  --border: #21262d; --border2: #30363d;
+  --accent: #58a6ff; --accent2: #79c0ff;
+  --green: #3fb950; --orange: #f0883e; --red: #f85149; --purple: #d2a8ff;
+  --card-shadow: rgba(0,0,0,0.4); --hover-glow: rgba(88,166,255,0.15);
+}
+body.light {
+  --bg: #ffffff; --bg2: #f6f8fa; --bg3: #e1e4e8;
+  --text: #24292f; --dim: #656d76; --muted: #8b949e;
+  --border: #d0d7de; --border2: #d0d7de;
+  --accent: #0969da; --accent2: #0550ae;
+  --card-shadow: rgba(0,0,0,0.08); --hover-glow: rgba(9,105,218,0.1);
+}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Inter',sans-serif;background:#0a0a0f;color:#e2e8f0;line-height:1.6;overflow-x:hidden}
-a{color:#58a6ff;text-decoration:none;transition:color .2s}
-a:hover{color:#79c0ff}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Inter',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden;transition:background .3s,color .3s}
+a{color:var(--accent);text-decoration:none;transition:color .2s}
+a:hover{color:var(--accent2)}
+
+/* Theme toggle */
+.theme-toggle{position:fixed;top:16px;right:16px;z-index:100;width:40px;height:40px;border-radius:10px;border:1px solid var(--border2);background:var(--bg2);color:var(--text);cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.theme-toggle:hover{border-color:var(--accent)}
 
 /* Hero */
 .hero{min-height:90vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:60px 24px 40px;position:relative;overflow:hidden}
 .hero::before{content:'';position:absolute;top:-200px;left:50%;transform:translateX(-50%);width:800px;height:800px;background:radial-gradient(circle,#58a6ff08 0%,transparent 70%);pointer-events:none}
-.hero-badge{display:inline-flex;align-items:center;gap:8px;padding:6px 16px;border:1px solid #30363d;border-radius:20px;font-size:13px;color:#8b949e;margin-bottom:32px;background:#161b22}
-.hero-badge span{color:#3fb950;font-weight:600}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;padding:6px 16px;border:1px solid var(--border2);border-radius:20px;font-size:13px;color:var(--dim);margin-bottom:32px;background:var(--bg2)}
+.hero-badge span{color:var(--green);font-weight:600}
 .hero h1{font-size:clamp(36px,6vw,64px);font-weight:800;letter-spacing:-1.5px;line-height:1.1;max-width:800px;margin-bottom:20px}
 .hero h1 .gradient{background:linear-gradient(135deg,#58a6ff,#d2a8ff,#f0883e);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.hero p{font-size:clamp(16px,2vw,20px);color:#8b949e;max-width:600px;margin-bottom:40px;line-height:1.7}
+.hero p{font-size:clamp(16px,2vw,20px);color:var(--dim);max-width:600px;margin-bottom:40px;line-height:1.7}
 .hero-actions{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
 .btn{padding:12px 28px;border-radius:8px;font-size:15px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .2s;border:none;display:inline-flex;align-items:center;gap:8px}
-.btn-primary{background:#58a6ff;color:#0a0a0f}
-.btn-primary:hover{background:#79c0ff;transform:translateY(-1px);box-shadow:0 4px 20px #58a6ff33}
-.btn-secondary{background:transparent;color:#e2e8f0;border:1px solid #30363d}
-.btn-secondary:hover{border-color:#58a6ff;color:#58a6ff}
+.btn-primary{background:var(--accent);color:#fff}
+body.light .btn-primary{color:#fff}
+.btn-primary:hover{filter:brightness(1.15);transform:translateY(-1px);box-shadow:0 4px 20px var(--hover-glow)}
+.btn-secondary{background:transparent;color:var(--text);border:1px solid var(--border2)}
+.btn-secondary:hover{border-color:var(--accent);color:var(--accent)}
 
-/* Live demo embed */
+/* Demo section */
 .demo-section{padding:0 24px 80px;max-width:1200px;margin:0 auto}
-.demo-label{text-align:center;font-size:13px;color:#484f58;text-transform:uppercase;letter-spacing:2px;font-weight:600;margin-bottom:16px}
-.demo-frame{border:1px solid #21262d;border-radius:16px;overflow:hidden;background:#0d1117;box-shadow:0 20px 60px rgba(0,0,0,0.4);position:relative;transition:transform .2s,box-shadow .2s;cursor:pointer}
+.demo-label{text-align:center;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;font-weight:600;margin-bottom:16px}
+.demo-frame{border:1px solid var(--border);border-radius:16px;overflow:hidden;background:var(--bg2);box-shadow:0 20px 60px var(--card-shadow);position:relative;transition:transform .2s,box-shadow .2s;cursor:pointer}
 .demo-overlay{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;background:rgba(10,10,15,0.5);opacity:0;transition:opacity .3s;text-decoration:none;z-index:2}
+body.light .demo-overlay{background:rgba(255,255,255,0.6)}
 .demo-frame:hover .demo-overlay{opacity:1}
-.demo-frame:hover{transform:translateY(-4px);box-shadow:0 24px 80px rgba(88,166,255,0.15)}
-.demo-play-btn{padding:14px 32px;background:#58a6ff;color:#0a0a0f;border-radius:10px;font-size:16px;font-weight:700;font-family:inherit;box-shadow:0 4px 20px #58a6ff44}
-.demo-dots{display:flex;gap:6px;padding:10px 16px;background:#161b22;border-bottom:1px solid #21262d}
-.demo-dot{width:10px;height:10px;border-radius:50%;background:#30363d}
+.demo-frame:hover{transform:translateY(-4px);box-shadow:0 24px 80px var(--hover-glow)}
+.demo-play-btn{padding:14px 32px;background:var(--accent);color:#fff;border-radius:10px;font-size:16px;font-weight:700;font-family:inherit;box-shadow:0 4px 20px var(--hover-glow)}
+.demo-dots{display:flex;gap:6px;padding:10px 16px;background:var(--bg2);border-bottom:1px solid var(--border)}
+.demo-dot{width:10px;height:10px;border-radius:50%;background:var(--border2)}
 .demo-dot:nth-child(1){background:#f85149}
 .demo-dot:nth-child(2){background:#f0883e}
 .demo-dot:nth-child(3){background:#3fb950}
 
+/* Flow canvas area */
+.demo-canvas-wrap{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden}
+.demo-canvas-wrap canvas{position:absolute;top:0;left:0;width:100%;height:100%}
+
 /* Features */
 .features{padding:80px 24px;max-width:1100px;margin:0 auto}
 .features h2{text-align:center;font-size:32px;font-weight:700;margin-bottom:12px;letter-spacing:-0.5px}
-.features .subtitle{text-align:center;color:#8b949e;font-size:17px;margin-bottom:48px}
+.features .subtitle{text-align:center;color:var(--dim);font-size:17px;margin-bottom:48px}
 .features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px}
-.feature-card{padding:28px;background:#161b22;border:1px solid #21262d;border-radius:12px;transition:all .2s}
-.feature-card:hover{border-color:#30363d;transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.3)}
+.feature-card{padding:28px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;transition:all .2s}
+.feature-card:hover{border-color:var(--border2);transform:translateY(-2px);box-shadow:0 8px 24px var(--card-shadow)}
 .feature-icon{font-size:28px;margin-bottom:12px}
-.feature-card h3{font-size:17px;font-weight:600;margin-bottom:8px;color:#e2e8f0}
-.feature-card p{font-size:14px;color:#8b949e;line-height:1.6}
+.feature-card h3{font-size:17px;font-weight:600;margin-bottom:8px}
+.feature-card p{font-size:14px;color:var(--dim);line-height:1.6}
 
 /* How it works */
 .how{padding:80px 24px;max-width:900px;margin:0 auto}
 .how h2{text-align:center;font-size:32px;font-weight:700;margin-bottom:48px;letter-spacing:-0.5px}
 .step-list{display:flex;flex-direction:column;gap:32px}
 .step-item{display:flex;gap:20px;align-items:flex-start}
-.step-num{flex-shrink:0;width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#58a6ff22,#d2a8ff22);border:1px solid #58a6ff44;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;color:#58a6ff}
+.step-num{flex-shrink:0;width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#58a6ff22,#d2a8ff22);border:1px solid #58a6ff44;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;color:var(--accent)}
 .step-content h3{font-size:17px;font-weight:600;margin-bottom:4px}
-.step-content p{font-size:14px;color:#8b949e}
-.step-content code{background:#21262d;padding:2px 8px;border-radius:4px;font-size:13px;color:#79c0ff;font-family:'SF Mono',Menlo,monospace}
+.step-content p{font-size:14px;color:var(--dim)}
+.step-content code{background:var(--bg3);padding:2px 8px;border-radius:4px;font-size:13px;color:var(--accent);font-family:'SF Mono',Menlo,monospace}
 
 /* CTA */
-.cta{padding:80px 24px;text-align:center;background:linear-gradient(180deg,transparent,#161b2233)}
+.cta{padding:80px 24px;text-align:center}
 .cta h2{font-size:28px;font-weight:700;margin-bottom:12px}
-.cta p{color:#8b949e;margin-bottom:32px;font-size:16px}
+.cta p{color:var(--dim);margin-bottom:32px;font-size:16px}
 .cta-links{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:16px}
-.cta-link{padding:8px 20px;border:1px solid #30363d;border-radius:8px;font-size:13px;color:#8b949e;transition:all .2s}
-.cta-link:hover{border-color:#58a6ff;color:#58a6ff}
+.cta-link{padding:8px 20px;border:1px solid var(--border2);border-radius:8px;font-size:13px;color:var(--dim);transition:all .2s}
+.cta-link:hover{border-color:var(--accent);color:var(--accent)}
 
 /* Footer */
-footer{padding:40px 24px;border-top:1px solid #21262d;text-align:center;color:#484f58;font-size:13px}
-footer a{color:#484f58}
-footer a:hover{color:#8b949e}
+footer{padding:40px 24px;border-top:1px solid var(--border);text-align:center;color:var(--muted);font-size:13px}
+footer a{color:var(--muted)}
+footer a:hover{color:var(--dim)}
 </style>
 </head>
 <body>
+
+<button class="theme-toggle" id="theme-toggle" onclick="document.body.classList.toggle('light');this.textContent=document.body.classList.contains('light')?'☀':'☾'">&#9790;</button>
 
 <section class="hero">
   <div class="hero-badge"><span>Open Source</span> Apache 2.0</div>
