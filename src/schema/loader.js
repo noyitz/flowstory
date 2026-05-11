@@ -58,7 +58,12 @@ export async function loadDiagram(source) {
   }
 
   // ----------------------------------------------------------------
-  // 2. Validate
+  // 2. Auto-fix common AI-generation patterns before validation
+  // ----------------------------------------------------------------
+  autoFixDiagram(diagram);
+
+  // ----------------------------------------------------------------
+  // 3. Validate
   // ----------------------------------------------------------------
   const result = validateDiagram(diagram);
   if (!result.valid) {
@@ -84,6 +89,121 @@ export async function loadDiagram(source) {
   normalizeAllStepEdges(diagram.flows);
 
   return diagram;
+}
+
+// ====================================================================
+// Auto-fix common AI-generation patterns
+// ====================================================================
+
+function autoFixDiagram(diagram) {
+  // Fix flows: accept "title" as alias for "label"
+  if (diagram.flows) {
+    for (const flow of Object.values(diagram.flows)) {
+      if (!flow.label && flow.title) {
+        flow.label = flow.title;
+        delete flow.title;
+      }
+      if (Array.isArray(flow.steps)) {
+        for (const step of flow.steps) {
+          // Auto-detect mode from fields if missing
+          if (!step.mode) {
+            if (step.from && step.to) {
+              step.mode = 'arrow';
+            } else if (step.target) {
+              step.mode = 'lightup';
+            }
+          }
+          // Accept "label" as alias for "num" on arrow steps
+          if (step.mode === 'arrow' && step.num === undefined && step.label !== undefined) {
+            const parsed = parseInt(step.label, 10);
+            step.num = isNaN(parsed) ? step.label : parsed;
+            delete step.label;
+          }
+          // Accept "badge" as string on arrow steps if num is missing
+          if (step.mode === 'arrow' && step.num === undefined && step.badge !== undefined) {
+            step.num = step.badge;
+          }
+          // Ensure lightup steps have badge (accept "label" as badge)
+          if (step.mode === 'lightup' && step.badge === undefined && step.label !== undefined) {
+            step.badge = step.label;
+            delete step.label;
+          }
+        }
+      }
+    }
+  }
+
+  // Fix canvas: accept "w"/"h" as aliases for "width"/"height"
+  if (diagram.canvas) {
+    if (diagram.canvas.w && !diagram.canvas.width) {
+      diagram.canvas.width = diagram.canvas.w;
+      delete diagram.canvas.w;
+    }
+    if (diagram.canvas.h && !diagram.canvas.height) {
+      diagram.canvas.height = diagram.canvas.h;
+      delete diagram.canvas.h;
+    }
+  }
+
+  // Fix tooltips: accept "details" as object (convert to array of pairs)
+  if (diagram.tooltips) {
+    for (const tip of Object.values(diagram.tooltips)) {
+      if (tip.details && !Array.isArray(tip.details)) {
+        tip.details = Object.entries(tip.details);
+      }
+    }
+  }
+
+  // Fix inspector initialState: accept "text" as alias for "value"
+  if (diagram.inspector?.initialState?.headers) {
+    for (const h of diagram.inspector.initialState.headers) {
+      if (h.text && !h.value) { h.value = h.text; delete h.text; }
+    }
+  }
+  if (diagram.inspector?.initialState?.body) {
+    for (const b of diagram.inspector.initialState.body) {
+      if (b.text && !b.value) { b.value = b.text; delete b.text; }
+    }
+  }
+
+  // Fix inspector mutations: normalize action formats
+  if (diagram.inspector?.mutations) {
+    for (const flowMuts of Object.values(diagram.inspector.mutations)) {
+      if (!Array.isArray(flowMuts)) continue;
+      for (const m of flowMuts) {
+        if (Array.isArray(m.actions)) {
+          const fixedActions = [];
+          for (const a of m.actions) {
+            // Skip bare string markers like "replaceHeaders"
+            if (typeof a === 'string') {
+              if (a === 'replaceHeaders') m._replaceNext = 'headers';
+              else if (a === 'replaceBody') m._replaceNext = 'body';
+              continue;
+            }
+            // Fix "text" → "value" in actions
+            if (a.text && !a.value) { a.value = a.text; delete a.text; }
+            fixedActions.push(a);
+          }
+          // If "replaceHeaders" marker was found, convert remaining actions to replaceHeaders
+          if (m._replaceNext === 'headers' && !m.replaceHeaders) {
+            m.replaceHeaders = fixedActions.map(a => ({
+              value: a.value || a.text, style: a.style || 'keep', id: a.id
+            }));
+            m.actions = [];
+            delete m._replaceNext;
+          } else if (m._replaceNext === 'body' && !m.replaceBody) {
+            m.replaceBody = fixedActions.map(a => ({
+              value: a.value || a.text, style: a.style || 'keep', id: a.id
+            }));
+            m.actions = [];
+            delete m._replaceNext;
+          } else {
+            m.actions = fixedActions;
+          }
+        }
+      }
+    }
+  }
 }
 
 // ====================================================================

@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RHOAI Dashboard Gateway — Authentication Flow</title>
+<link rel="stylesheet" href="https://noyitz.github.io/flowstory/templates/style.css">
+</head>
+<body>
+
+<button class="fs-theme-toggle" id="fs-theme">&#9790;</button>
+
+<div class="fs-brand" id="fs-brand"></div>
+<div class="fs-title" id="fs-title"></div>
+
+<div class="fs-panel">
+  <div class="fs-flow-bar">
+    <select id="fs-flow-select"></select>
+    <button class="fs-start" id="fs-play">&#9654; Start</button>
+    <button id="fs-speed">1x</button>
+    <button id="fs-loop" style="border-color:#79c0ff;color:#79c0ff">&#8635; Loop</button>
+    <button class="fs-reset" id="fs-reset">Reset</button>
+  </div>
+  <div class="fs-steps" id="fs-steps">
+    <div class="fs-steps-title">Flow Steps <span style="font-weight:400;font-size:11px;color:var(--fs-text-dim)">· click to jump</span></div>
+    <div id="fs-steps-container"></div>
+  </div>
+  <div class="fs-inspector" id="fs-inspector">
+    <div class="fs-inspector-title" id="fs-inspector-title" style="color:var(--fs-accent)">Request</div>
+    <div id="fs-inspector-content"></div>
+  </div>
+</div>
+
+<div id="fs-highlight-box" style="display:none;position:fixed;z-index:350;border-radius:10px;pointer-events:none"></div>
+<div id="fs-overlay" style="display:none;position:fixed;top:0;left:0;right:380px;bottom:0;z-index:300;background:rgba(0,0,0,0.6)">
+  <div id="fs-overlay-card" style="position:absolute;background:#161b22ee;border:1px solid #30363d;border-radius:14px;max-width:420px;padding:22px 26px;box-shadow:0 12px 40px rgba(0,0,0,0.5)">
+    <button id="fs-overlay-close" style="position:absolute;top:10px;right:14px;background:none;border:none;color:#8b949e;font-size:18px;cursor:pointer;padding:4px 8px;border-radius:6px">✕</button>
+    <div id="fs-overlay-accent" style="width:4px;height:24px;border-radius:2px;position:absolute;left:0;top:22px"></div>
+    <h2 id="fs-overlay-title" style="margin:0 0 6px;font-size:18px;color:#c9d1d9;font-family:system-ui"></h2>
+    <p id="fs-overlay-desc" style="margin:0 0 14px;font-size:13px;color:#8b949e;line-height:1.5;font-family:system-ui"></p>
+    <div id="fs-overlay-details" style="font-size:12px;font-family:'SF Mono',Menlo,monospace"></div>
+    <button id="fs-overlay-resume" style="margin-top:14px;padding:7px 20px;border:1px solid #3fb950;border-radius:8px;background:transparent;color:#3fb950;font-size:13px;cursor:pointer;font-family:system-ui">&#9654; Resume Flow</button>
+  </div>
+</div>
+
+<div class="fs-legend" id="fs-legend"></div>
+
+<canvas id="fs-canvas"></canvas>
+
+<script type="module">
+import { FlowStory } from 'https://noyitz.github.io/flowstory/src/index.js';
+
+const diagram = {
+  "meta": {
+    "title": "RHOAI Dashboard Gateway",
+    "subtitle": "Authentication & Authorization Flow",
+    "brand": "Red Hat OpenShift AI",
+    "brandColor": "#ee0000"
+  },
+  "canvas": { "w": 1250, "h": 1000 },
+  "flowOrder": ["oidc", "rbac", "signout", "error401"],
+  "defaultFlow": "oidc",
+
+  "nodes": {
+    "user": {
+      "x": -70, "y": 370, "w": 90, "h": 110,
+      "type": "icon",
+      "label": "User Browser",
+      "color": "#58a6ff"
+    },
+    "cluster": {
+      "x": 85, "y": 25, "w": 730, "h": 880,
+      "type": "boundary",
+      "label": "OpenShift Cluster",
+      "color": "#30363d"
+    },
+    "envoy": {
+      "x": 150, "y": 90, "w": 260, "h": 65,
+      "label": "Istio Gateway (Envoy)",
+      "sublabel": "443/TCP · TLS 1.3 · ext_authz",
+      "color": "#8b949e"
+    },
+    "upstream": {
+      "x": 530, "y": 90, "w": 250, "h": 65,
+      "label": "Upstream Application",
+      "sublabel": "Dashboard · Notebooks · KServe",
+      "color": "#3fb950"
+    },
+    "auth-proxy": {
+      "x": 150, "y": 350, "w": 260, "h": 65,
+      "label": "kube-auth-proxy",
+      "sublabel": "4180/TCP · OIDC + OAuth · Sessions",
+      "color": "#f0883e"
+    },
+    "k8s-api": {
+      "x": 530, "y": 350, "w": 250, "h": 65,
+      "label": "Kubernetes API Server",
+      "sublabel": "TokenReview · SubjectAccessReview",
+      "color": "#58a6ff"
+    },
+    "rbac-proxy": {
+      "x": 150, "y": 610, "w": 260, "h": 65,
+      "label": "kube-rbac-proxy",
+      "sublabel": "8443/TCP · TLS 1.2+ · RBAC sidecar",
+      "color": "#f0883e"
+    },
+    "redis": {
+      "x": 530, "y": 610, "w": 250, "h": 65,
+      "label": "Redis (Optional)",
+      "sublabel": "6379/TCP · Session Store · AES-GCM",
+      "color": "#8b949e"
+    },
+    "oidc": {
+      "x": 920, "y": 280, "w": 220, "h": 65,
+      "label": "OIDC Provider",
+      "sublabel": "External IdP · 443/TCP TLS",
+      "color": "#d2a8ff"
+    }
+  },
+
+  "flows": {
+    "oidc": {
+      "title": "OIDC Authentication (Happy Path)",
+      "steps": [
+        {
+          "from": "user", "to": "auth-proxy",
+          "fromRight": true, "toLeft": true,
+          "label": "1", "text": "GET /oauth2/start — initiate login",
+          "color": "#f0883e"
+        },
+        {
+          "from": "auth-proxy", "to": "oidc",
+          "fromRight": true, "toLeft": true,
+          "label": "2", "text": "302 Redirect → authorization endpoint",
+          "color": "#f0883e"
+        },
+        {
+          "from": "oidc", "to": "auth-proxy",
+          "fromLeft": true, "toRight": true,
+          "yOff": 15,
+          "label": "3", "text": "Callback /oauth2/callback?code=xxx",
+          "color": "#f0883e"
+        },
+        {
+          "from": "auth-proxy", "to": "oidc",
+          "fromRight": true, "toLeft": true,
+          "yOff": 15,
+          "label": "4", "text": "Exchange authorization code for tokens",
+          "color": "#f0883e"
+        },
+        {
+          "target": "auth-proxy",
+          "badge": "5",
+          "text": "Session created (AES-CFB cookie or Redis)"
+        },
+        {
+          "from": "auth-proxy", "to": "upstream",
+          "fromTop": true, "toBottom": true,
+          "fromXOff": 60, "toXOff": -30,
+          "label": "6", "text": "Proxy request + X-Auth-Request-User header",
+          "color": "#58a6ff"
+        },
+        {
+          "from": "upstream", "to": "user",
+          "fromLeft": true, "toRight": true,
+          "waypoints": [{"x": 20, "y": 122}],
+          "label": "7", "text": "Response + Set-Cookie: _oauth2_proxy=…",
+          "color": "#3fb950"
+        }
+      ]
+    },
+
+    "rbac": {
+      "title": "Kubernetes RBAC Authorization",
+      "steps": [
+        {
+          "from": "user", "to": "rbac-proxy",
+          "fromRight": true, "toLeft": true,
+          "label": "1", "text": "HTTPS request with Bearer token",
+          "color": "#58a6ff"
+        },
+        {
+          "from": "rbac-proxy", "to": "k8s-api",
+          "fromRight": true, "toLeft": true,
+          "yOff": -10,
+          "label": "2", "text": "TokenReview — validate bearer token",
+          "color": "#58a6ff"
+        },
+        {
+          "from": "k8s-api", "to": "rbac-proxy",
+          "fromLeft": true, "toRight": true,
+          "yOff": 10,
+          "label": "3", "text": "Authenticated identity confirmed",
+          "color": "#3fb950"
+        },
+        {
+          "from": "rbac-proxy", "to": "k8s-api",
+          "fromRight": true, "toLeft": true,
+          "yOff": 10,
+          "label": "4", "text": "SubjectAccessReview — check permissions",
+          "color": "#58a6ff"
+        },
+        {
+          "from": "k8s-api", "to": "rbac-proxy",
+          "fromLeft": true, "toRight": true,
+          "yOff": -10,
+          "label": "5", "text": "Access Allowed",
+          "color": "#3fb950"
+        },
+        {
+          "from": "rbac-proxy", "to": "upstream",
+          "fromRight": true, "toLeft": true,
+          "waypoints": [{"x": 470, "y": 642}, {"x": 470, "y": 122}],
+          "label": "6", "text": "Forward + x-remote-user / x-remote-groups",
+          "color": "#58a6ff"
+        },
+        {
+          "from": "upstream", "to": "user",
+          "fromLeft": true, "toRight": true,
+          "waypoints": [{"x": 20, "y": 122}],
+          "label": "7", "text": "200 OK — authorized response",
+          "color": "#3fb950"
+        }
+      ]
+    },
+
+    "signout": {
+      "title": "Sign-Out Flow",
+      "steps": [
+        {
+          "from": "user", "to": "auth-proxy",
+          "fromRight": true, "toLeft": true,
+          "label": "1", "text": "GET /oauth2/sign_out (session cookie)",
+          "color": "#f0883e"
+        },
+        {
+          "from": "auth-proxy", "to": "k8s-api",
+          "fromRight": true, "toLeft": true,
+          "label": "2", "text": "DELETE OAuthAccessToken via K8s API",
+          "color": "#f0883e"
+        },
+        {
+          "from": "k8s-api", "to": "auth-proxy",
+          "fromLeft": true, "toRight": true,
+          "yOff": 15,
+          "label": "3", "text": "Token deleted — confirmed",
+          "color": "#3fb950"
+        },
+        {
+          "from": "auth-proxy", "to": "user",
+          "fromLeft": true, "toRight": true,
+          "label": "4", "text": "Clear cookie + redirect to sign-in",
+          "color": "#3fb950"
+        }
+      ]
+    },
+
+    "error401": {
+      "title": "Session Expiry / 401 Error",
+      "steps": [
+        {
+          "from": "user", "to": "envoy",
+          "fromRight": true, "toLeft": true,
+          "yOff": 10,
+          "label": "1", "text": "HTTPS request (expired / missing session)",
+          "color": "#58a6ff"
+        },
+        {
+          "from": "envoy", "to": "auth-proxy",
+          "fromBottom": true, "toTop": true,
+          "fromXOff": -30,
+          "label": "2", "text": "ext_authz check: GET /oauth2/auth",
+          "color": "#58a6ff"
+        },
+        {
+          "target": "auth-proxy",
+          "badge": "!",
+          "errColor": "#f85149",
+          "text": "Session expired or invalid — no valid cookie/token"
+        },
+        {
+          "from": "auth-proxy", "to": "envoy",
+          "fromTop": true, "toBottom": true,
+          "fromXOff": 30,
+          "label": "4", "text": "401 Unauthorized",
+          "color": "#f85149"
+        },
+        {
+          "from": "envoy", "to": "user",
+          "fromLeft": true, "toRight": true,
+          "yOff": -10,
+          "label": "5", "text": "Redirect to /oauth2/sign_in",
+          "color": "#f85149"
+        }
+      ]
+    }
+  },
+
+  "inspector": {
+    "initialState": {
+      "headers": [
+        {"id": "method", "text": "GET / HTTP/1.1", "style": "keep"},
+        {"id": "host", "text": "Host: dashboard.rhoai.example.com", "style": "keep"},
+        {"id": "auth", "text": "Authorization: (none)", "style": "keep"},
+        {"id": "cookie", "text": "Cookie: (none)", "style": "keep"}
+      ],
+      "body": []
+    },
+    "mutations": {
+      "oidc": [
+        {
+          "step": 1, "phase": "request",
+          "actions": [
+            {"id": "method", "text": "GET /oauth2/start HTTP/1.1", "style": "highlight"},
+            {"id": "cookie", "style": "del"}
+          ]
+        },
+        {
+          "step": 2, "phase": "response",
+          "actions": [
+            "replaceHeaders",
+            {"id": "status", "text": "302 Found", "style": "highlight"},
+            {"id": "location", "text": "Location: https://idp.example/authorize?client_id=rhoai&redirect_uri=…", "style": "add"}
+          ]
+        },
+        {
+          "step": 3, "phase": "request",
+          "actions": [
+            "replaceHeaders",
+            {"id": "method", "text": "GET /oauth2/callback?code=abc123 HTTP/1.1", "style": "highlight"},
+            {"id": "host", "text": "Host: dashboard.rhoai.example.com", "style": "keep"}
+          ]
+        },
+        {
+          "step": 4, "phase": "request",
+          "actions": [
+            "replaceHeaders",
+            {"id": "method", "text": "POST /token HTTP/1.1", "style": "highlight"},
+            {"id": "host", "text": "Host: idp.example.com", "style": "keep"},
+            {"id": "grant", "text": "grant_type=authorization_code", "style": "add"},
+            {"id": "code", "text": "code=abc123&client_secret=***", "style": "add"}
+          ]
+        },
+        {
+          "step": 5, "phase": "response",
+          "actions": [
+            "replaceHeaders",
+            {"id": "tok", "text": "access_token: eyJhbG…", "style": "add"},
+            {"id": "id", "text": "id_token: eyJzdW…", "style": "add"},
+            {"id": "session", "text": "Session → AES-CFB encrypted cookie", "style": "add"}
+          ]
+        },
+        {
+          "step": 6, "phase": "request",
+          "actions": [
+            "replaceHeaders",
+            {"id": "method", "text": "GET / HTTP/1.1", "style": "keep"},
+            {"id": "host", "text": "Host: dashboard-svc.ns.svc", "style": "keep"},
+            {"id": "xuser", "text": "X-Auth-Request-User: user@example.com", "style": "add"},
+            {"id": "xgroups", "text": "X-Auth-Request-Groups: system:authenticated", "style": "add"},
+            {"id": "bearer", "text": "Authorization: Bearer eyJhbG…", "style": "add"}
+          ]
+        },
+        {
+          "step": 7, "phase": "response",
+          "actions": [
+            "replaceHeaders",
+            {"id": "status", "text": "200 OK", "style": "highlight"},
+            {"id": "cookie", "text": "Set-Cookie: _oauth2_proxy=…; HttpOnly; Secure", "style": "add"}
+          ]
+        }
+      ],
+      "rbac": [
+        {
+          "step": 1, "phase": "request",
+          "actions": [
+            {"id": "method", "text": "GET /api/v1/resource HTTP/1.1", "style": "highlight"},
+            {"id": "auth", "text": "Authorization: Bearer eyJhbG…(SA token)", "style": "highlight"},
+            {"id": "cookie", "style": "del"}
+          ]
+        },
+        {
+          "step": 2, "phase": "request",
+          "actions": [
+            "replaceHeaders",
+            {"id": "api", "text": "POST /apis/authentication.k8s.io/v1/tokenreviews", "style": "highlight"},
+            {"id": "tok", "text": "token: eyJhbG…(SA token)", "style": "add"}
+          ]
+        },
+        {
+          "step": 3, "phase": "response",
+          "actions": [
+            "replaceHeaders",
+            {"id": "status", "text": "authenticated: true", "style": "add"},
+            {"id": "user", "text": "user: system:serviceaccount:ns:sa-name", "style": "add"}
+          ]
+        },
+        {
+          "step": 4, "phase": "request",
+          "actions": [
+            "replaceHeaders",
+            {"id": "api", "text": "POST /apis/authorization.k8s.io/v1/subjectaccessreviews", "style": "highlight"},
+            {"id": "verb", "text": "verb: get  resource: pods  namespace: ns", "style": "add"}
+          ]
+        },
+        {
+          "step": 5, "phase": "response",
+          "actions": [
+            "replaceHeaders",
+            {"id": "allowed", "text": "allowed: true", "style": "add"},
+            {"id": "reason", "text": "reason: RBAC — role binding matches", "style": "add"}
+          ]
+        },
+        {
+          "step": 6, "phase": "request",
+          "actions": [
+            "replaceHeaders",
+            {"id": "method", "text": "GET /api/v1/resource HTTP/1.1", "style": "keep"},
+            {"id": "xuser", "text": "X-Remote-User: system:serviceaccount:ns:sa-name", "style": "add"},
+            {"id": "xgroups", "text": "X-Remote-Groups: system:serviceaccounts", "style": "add"}
+          ]
+        },
+        {
+          "step": 7, "phase": "response",
+          "actions": [
+            "replaceHeaders",
+            {"id": "status", "text": "200 OK", "style": "highlight"}
+          ]
+        }
+      ],
+      "signout": [
+        {
+          "step": 1, "phase": "request",
+          "actions": [
+            {"id": "method", "text": "GET /oauth2/sign_out HTTP/1.1", "style": "highlight"},
+            {"id": "cookie", "text": "Cookie: _oauth2_proxy=…", "style": "highlight"},
+            {"id": "auth", "style": "del"}
+          ]
+        },
+        {
+          "step": 2, "phase": "request",
+          "actions": [
+            "replaceHeaders",
+            {"id": "api", "text": "DELETE /apis/oauth.openshift.io/v1/oauthaccesstokens/sha256~…", "style": "highlight"},
+            {"id": "bearer", "text": "Authorization: Bearer (access token)", "style": "add"}
+          ]
+        },
+        {
+          "step": 3, "phase": "response",
+          "actions": [
+            "replaceHeaders",
+            {"id": "status", "text": "200 OK — token deleted", "style": "add"}
+          ]
+        },
+        {
+          "step": 4, "phase": "response",
+          "actions": [
+            "replaceHeaders",
+            {"id": "status", "text": "302 Found", "style": "highlight"},
+            {"id": "location", "text": "Location: /oauth2/sign_in", "style": "add"},
+            {"id": "clear", "text": "Set-Cookie: _oauth2_proxy=; Max-Age=0", "style": "err"}
+          ]
+        }
+      ],
+      "error401": [
+        {
+          "step": 1, "phase": "request",
+          "actions": [
+            {"id": "method", "text": "GET /dashboard HTTP/1.1", "style": "highlight"},
+            {"id": "cookie", "text": "Cookie: _oauth2_proxy=…(expired)", "style": "err"},
+            {"id": "auth", "style": "del"}
+          ]
+        },
+        {
+          "step": 2, "phase": "request",
+          "actions": [
+            "replaceHeaders",
+            {"id": "method", "text": "GET /oauth2/auth HTTP/1.1 (ext_authz subrequest)", "style": "highlight"},
+            {"id": "fwd", "text": "X-Forwarded-For: 10.0.0.1", "style": "add"},
+            {"id": "cookie", "text": "Cookie: _oauth2_proxy=…(expired)", "style": "err"}
+          ]
+        },
+        {
+          "step": 3, "phase": "response",
+          "actions": [
+            "replaceHeaders",
+            {"id": "err1", "text": "Session validation failed", "style": "err"},
+            {"id": "err2", "text": "Cookie expired or HMAC invalid", "style": "err"}
+          ]
+        },
+        {
+          "step": 4, "phase": "response",
+          "actions": [
+            "replaceHeaders",
+            {"id": "status", "text": "401 Unauthorized", "style": "err"}
+          ]
+        },
+        {
+          "step": 5, "phase": "response",
+          "actions": [
+            "replaceHeaders",
+            {"id": "status", "text": "302 Found", "style": "err"},
+            {"id": "location", "text": "Location: /oauth2/sign_in?rd=%2Fdashboard", "style": "add"}
+          ]
+        }
+      ]
+    }
+  },
+
+  "tooltips": {
+    "envoy": {
+      "title": "Istio Gateway (Envoy Proxy)",
+      "description": "TLS-terminating reverse proxy. Routes HTTPRoute CRs to backend services. Queries kube-auth-proxy via ext_authz before forwarding requests.",
+      "details": {
+        "Port": "443/TCP HTTPS (TLS 1.3)",
+        "Protocol": "ext_authz filter → subrequest to /oauth2/auth",
+        "Role": "Ingress + authentication gate",
+        "TLS": "Terminates external TLS, re-encrypts to backends"
+      }
+    },
+    "auth-proxy": {
+      "title": "kube-auth-proxy",
+      "description": "FIPS-compliant authentication proxy derived from oauth2-proxy. Supports OIDC, OpenShift OAuth, JWT, and ServiceAccount tokens. NOT in the data path — only validates credentials.",
+      "details": {
+        "Port": "4180/TCP HTTP",
+        "Auth Methods": "OIDC, OpenShift OAuth, JWT, Basic, SA tokens",
+        "Sessions": "AES-CFB cookie (split >4KB) or Redis (AES-GCM)",
+        "Endpoints": "/oauth2/start, /callback, /auth, /sign_out, /userinfo",
+        "FIPS": "CGO_ENABLED=1, GOEXPERIMENT=strictfipsruntime"
+      }
+    },
+    "rbac-proxy": {
+      "title": "kube-rbac-proxy",
+      "description": "Authorization sidecar deployed in component pods. Validates bearer tokens via TokenReview and checks permissions via SubjectAccessReview. Three-tier authorization: hardcoded, static, and SAR.",
+      "details": {
+        "Port": "8443/TCP HTTPS (TLS 1.2+)",
+        "Authorization": "Permissive-union of 3 tiers",
+        "Cache": "Positive: 5 min, Negative: 30 sec",
+        "Headers": "Injects x-remote-user, x-remote-groups"
+      }
+    },
+    "k8s-api": {
+      "title": "Kubernetes API Server",
+      "description": "Handles TokenReview for authentication and SubjectAccessReview for authorization decisions. Also manages OAuthAccessToken lifecycle for sign-out.",
+      "details": {
+        "TokenReview": "authentication.k8s.io/v1",
+        "SAR": "authorization.k8s.io/v1",
+        "OAuth Tokens": "oauth.openshift.io/v1"
+      }
+    },
+    "oidc": {
+      "title": "External OIDC Provider",
+      "description": "Standards-compliant OpenID Connect provider. Handles user authentication and issues ID tokens + access tokens. Supports BYOIDC (Bring Your Own IDP) starting in OCP 4.19.",
+      "details": {
+        "Protocol": "OpenID Connect (OAuth 2.0)",
+        "Endpoints": "Authorization, Token, UserInfo, JWKS",
+        "Port": "443/TCP HTTPS (TLS 1.2+)"
+      }
+    },
+    "upstream": {
+      "title": "Upstream Application",
+      "description": "RHOAI components served behind the gateway: Dashboard, Notebooks, KServe, DSP, TrustyAI. Receives pre-authenticated requests with identity headers.",
+      "details": {
+        "Protocol": "HTTP (unencrypted within pod)",
+        "Auth Headers": "X-Auth-Request-User, X-Auth-Request-Groups",
+        "Components": "Dashboard, Notebooks, KServe, DSP"
+      }
+    },
+    "redis": {
+      "title": "Redis Session Store",
+      "description": "Optional distributed session storage. Supports standalone, Sentinel, and Cluster topologies. Sessions encrypted with AES-GCM using per-session secrets. Cookie stores only a session ticket ID.",
+      "details": {
+        "Port": "6379/TCP",
+        "Encryption": "AES-GCM per-session keys",
+        "Topologies": "Standalone, Sentinel, Cluster",
+        "Locking": "Distributed locks prevent refresh races"
+      }
+    }
+  },
+
+  "legend": [
+    {"color": "#f0883e", "label": "Authentication (OIDC / OAuth)"},
+    {"color": "#58a6ff", "label": "Request Path"},
+    {"color": "#3fb950", "label": "Response / Success"},
+    {"color": "#f85149", "label": "Error / Unauthorized"},
+    {"color": "#8b949e", "label": "Infrastructure"},
+    {"color": "#d2a8ff", "label": "External Provider"}
+  ]
+};
+
+const viz = new FlowStory(document.getElementById('fs-canvas'), {
+  stepsContainer: document.getElementById('fs-steps-container'),
+  inspectorTitle: document.getElementById('fs-inspector-title'),
+  inspectorContent: document.getElementById('fs-inspector-content'),
+  overlay: document.getElementById('fs-overlay'),
+  overlayCard: document.getElementById('fs-overlay-card'),
+  overlayTitle: document.getElementById('fs-overlay-title'),
+  overlayDesc: document.getElementById('fs-overlay-desc'),
+  overlayDetails: document.getElementById('fs-overlay-details'),
+  overlayAccent: document.getElementById('fs-overlay-accent'),
+  overlayClose: document.getElementById('fs-overlay-close'),
+  overlayResume: document.getElementById('fs-overlay-resume'),
+  highlightBox: document.getElementById('fs-highlight-box'),
+  brand: document.getElementById('fs-brand'),
+  title: document.getElementById('fs-title'),
+  legend: document.getElementById('fs-legend'),
+  flowSelect: document.getElementById('fs-flow-select'),
+  playBtn: document.getElementById('fs-play'),
+  speedBtn: document.getElementById('fs-speed'),
+  loopBtn: document.getElementById('fs-loop'),
+  resetBtn: document.getElementById('fs-reset'),
+  themeBtn: document.getElementById('fs-theme'),
+});
+
+window.__flowstory = viz;
+
+try {
+  await viz.load(diagram);
+
+  viz.state.loopMode = true;
+  const loopBtn = document.getElementById('fs-loop');
+  if (loopBtn) {
+    loopBtn.textContent = '⟳ Loop ON';
+    loopBtn.style.borderColor = '#3fb950';
+    loopBtn.style.color = '#3fb950';
+  }
+  viz.play();
+} catch (e) {
+  console.error('FlowStory load error:', e);
+  document.body.innerHTML = `<div style="padding:40px;color:#f85149;font-family:monospace"><h2>FlowStory Load Error</h2><pre>${e.message}\n\n${e.stack || ''}</pre></div>`;
+}
+</script>
+</body>
+</html>
