@@ -34,7 +34,7 @@
 <div id="fs-highlight-box" style="display:none;position:fixed;z-index:350;border-radius:10px;pointer-events:none"></div>
 <div id="fs-overlay" style="display:none;position:fixed;top:0;left:0;right:380px;bottom:0;z-index:300;background:rgba(0,0,0,0.6)">
   <div id="fs-overlay-card" style="position:absolute;background:#161b22ee;border:1px solid #30363d;border-radius:14px;max-width:420px;padding:22px 26px;box-shadow:0 12px 40px rgba(0,0,0,0.5)">
-    <button id="fs-overlay-close" style="position:absolute;top:10px;right:14px;background:none;border:none;color:#8b949e;font-size:18px;cursor:pointer;padding:4px 8px;border-radius:6px">✕</button>
+    <button id="fs-overlay-close" style="position:absolute;top:10px;right:14px;background:none;border:none;color:#8b949e;font-size:18px;cursor:pointer;padding:4px 8px;border-radius:6px">&#10005;</button>
     <div id="fs-overlay-accent" style="width:4px;height:24px;border-radius:2px;position:absolute;left:0;top:22px"></div>
     <h2 id="fs-overlay-title" style="margin:0 0 6px;font-size:18px;color:#c9d1d9;font-family:system-ui"></h2>
     <p id="fs-overlay-desc" style="margin:0 0 14px;font-size:13px;color:#8b949e;line-height:1.5;font-family:system-ui"></p>
@@ -58,7 +58,7 @@ const diagram = {
     "brandColor": "#ee0000"
   },
   "canvas": { "w": 1250, "h": 1000 },
-  "flowOrder": ["oidc", "rbac", "signout", "error401"],
+  "flowOrder": ["oidc", "rbac", "signout", "session_expiry"],
   "defaultFlow": "oidc",
 
   "nodes": {
@@ -77,7 +77,7 @@ const diagram = {
     "envoy": {
       "x": 150, "y": 90, "w": 260, "h": 65,
       "label": "Istio Gateway (Envoy)",
-      "sublabel": "443/TCP · TLS 1.3 · ext_authz",
+      "sublabel": "443/TCP · TLS 1.3 · ext_authz filter",
       "color": "#8b949e"
     },
     "upstream": {
@@ -89,7 +89,7 @@ const diagram = {
     "auth-proxy": {
       "x": 150, "y": 350, "w": 260, "h": 65,
       "label": "kube-auth-proxy",
-      "sublabel": "4180/TCP · OIDC + OAuth · Sessions",
+      "sublabel": "4180/TCP · OIDC + OAuth · FIPS",
       "color": "#f0883e"
     },
     "k8s-api": {
@@ -101,13 +101,13 @@ const diagram = {
     "rbac-proxy": {
       "x": 150, "y": 610, "w": 260, "h": 65,
       "label": "kube-rbac-proxy",
-      "sublabel": "8443/TCP · TLS 1.2+ · RBAC sidecar",
+      "sublabel": "8443/TCP · TLS 1.2+ · 3-tier RBAC",
       "color": "#f0883e"
     },
     "redis": {
       "x": 530, "y": 610, "w": 250, "h": 65,
       "label": "Redis (Optional)",
-      "sublabel": "6379/TCP · Session Store · AES-GCM",
+      "sublabel": "6379/TCP · AES-GCM · Distributed Lock",
       "color": "#8b949e"
     },
     "oidc": {
@@ -125,46 +125,51 @@ const diagram = {
         {
           "from": "user", "to": "auth-proxy",
           "fromRight": true, "toLeft": true,
-          "label": "1", "text": "GET /oauth2/start — initiate login",
+          "label": "1", "text": "GET /oauth2/start — initiate OIDC login flow",
           "color": "#f0883e"
         },
         {
           "from": "auth-proxy", "to": "oidc",
           "fromRight": true, "toLeft": true,
-          "label": "2", "text": "302 Redirect → authorization endpoint",
+          "label": "2", "text": "302 Redirect to authorization endpoint (client_id + redirect_uri)",
           "color": "#f0883e"
+        },
+        {
+          "target": "oidc",
+          "badge": "3",
+          "text": "User authenticates with IdP (credentials, MFA)"
         },
         {
           "from": "oidc", "to": "auth-proxy",
           "fromLeft": true, "toRight": true,
           "yOff": 15,
-          "label": "3", "text": "Callback /oauth2/callback?code=xxx",
-          "color": "#f0883e"
+          "label": "4", "text": "GET /oauth2/callback?code=<authorization_code>",
+          "color": "#d2a8ff"
         },
         {
           "from": "auth-proxy", "to": "oidc",
           "fromRight": true, "toLeft": true,
           "yOff": 15,
-          "label": "4", "text": "Exchange authorization code for tokens",
+          "label": "5", "text": "POST /token — exchange code + client credentials for tokens",
           "color": "#f0883e"
         },
         {
           "target": "auth-proxy",
-          "badge": "5",
-          "text": "Session created (AES-CFB cookie or Redis)"
+          "badge": "6",
+          "text": "Session created — AES-CFB encrypted cookie + HMAC-SHA256 signature"
         },
         {
           "from": "auth-proxy", "to": "upstream",
           "fromTop": true, "toBottom": true,
           "fromXOff": 60, "toXOff": -30,
-          "label": "6", "text": "Proxy request + X-Auth-Request-User header",
+          "label": "7", "text": "Forward request + X-Auth-Request-User/Groups headers",
           "color": "#58a6ff"
         },
         {
           "from": "upstream", "to": "user",
           "fromLeft": true, "toRight": true,
           "waypoints": [{"x": 20, "y": 122}],
-          "label": "7", "text": "Response + Set-Cookie: _oauth2_proxy=…",
+          "label": "8", "text": "200 OK + Set-Cookie: _oauth2_proxy=<encrypted>; HttpOnly; Secure",
           "color": "#3fb950"
         }
       ]
@@ -176,49 +181,54 @@ const diagram = {
         {
           "from": "user", "to": "rbac-proxy",
           "fromRight": true, "toLeft": true,
-          "label": "1", "text": "HTTPS request with Bearer token",
+          "label": "1", "text": "HTTPS request with Bearer ServiceAccount token",
           "color": "#58a6ff"
         },
         {
           "from": "rbac-proxy", "to": "k8s-api",
           "fromRight": true, "toLeft": true,
           "yOff": -10,
-          "label": "2", "text": "TokenReview — validate bearer token",
+          "label": "2", "text": "TokenReview — validate bearer token via K8s API",
           "color": "#58a6ff"
         },
         {
           "from": "k8s-api", "to": "rbac-proxy",
           "fromLeft": true, "toRight": true,
           "yOff": 10,
-          "label": "3", "text": "Authenticated identity confirmed",
+          "label": "3", "text": "Authenticated: user identity + groups confirmed",
           "color": "#3fb950"
         },
         {
+          "target": "rbac-proxy",
+          "badge": "4",
+          "text": "Tier 1: Hardcoded check (prometheus-k8s → /metrics always allowed)"
+        },
+        {
           "from": "rbac-proxy", "to": "k8s-api",
           "fromRight": true, "toLeft": true,
           "yOff": 10,
-          "label": "4", "text": "SubjectAccessReview — check permissions",
+          "label": "5", "text": "Tier 3: SubjectAccessReview — verb, resource, namespace",
           "color": "#58a6ff"
         },
         {
           "from": "k8s-api", "to": "rbac-proxy",
           "fromLeft": true, "toRight": true,
           "yOff": -10,
-          "label": "5", "text": "Access Allowed",
+          "label": "6", "text": "Allowed — RBAC role binding matches",
           "color": "#3fb950"
         },
         {
           "from": "rbac-proxy", "to": "upstream",
           "fromRight": true, "toLeft": true,
           "waypoints": [{"x": 470, "y": 642}, {"x": 470, "y": 122}],
-          "label": "6", "text": "Forward + x-remote-user / x-remote-groups",
+          "label": "7", "text": "Forward + x-remote-user / x-remote-groups headers",
           "color": "#58a6ff"
         },
         {
           "from": "upstream", "to": "user",
           "fromLeft": true, "toRight": true,
           "waypoints": [{"x": 20, "y": 122}],
-          "label": "7", "text": "200 OK — authorized response",
+          "label": "8", "text": "200 OK — authorized response",
           "color": "#3fb950"
         }
       ]
@@ -230,66 +240,77 @@ const diagram = {
         {
           "from": "user", "to": "auth-proxy",
           "fromRight": true, "toLeft": true,
-          "label": "1", "text": "GET /oauth2/sign_out (session cookie)",
+          "label": "1", "text": "GET /oauth2/sign_out (session cookie attached)",
           "color": "#f0883e"
+        },
+        {
+          "target": "auth-proxy",
+          "badge": "2",
+          "text": "Validate session cookie — decrypt and extract access token"
         },
         {
           "from": "auth-proxy", "to": "k8s-api",
           "fromRight": true, "toLeft": true,
-          "label": "2", "text": "DELETE OAuthAccessToken via K8s API",
-          "color": "#f0883e"
+          "label": "3", "text": "DELETE /apis/oauth.openshift.io/v1/oauthaccesstokens/sha256~...",
+          "color": "#f85149"
         },
         {
           "from": "k8s-api", "to": "auth-proxy",
           "fromLeft": true, "toRight": true,
           "yOff": 15,
-          "label": "3", "text": "Token deleted — confirmed",
+          "label": "4", "text": "200 OK — OAuthAccessToken revoked at OAuth server",
           "color": "#3fb950"
+        },
+        {
+          "target": "auth-proxy",
+          "badge": "!",
+          "errColor": "#f85149",
+          "text": "Session destroyed — cookie cleared, token revoked"
         },
         {
           "from": "auth-proxy", "to": "user",
           "fromLeft": true, "toRight": true,
-          "label": "4", "text": "Clear cookie + redirect to sign-in",
-          "color": "#3fb950"
+          "label": "6", "text": "302 Redirect → /oauth2/sign_in + Set-Cookie: Max-Age=0",
+          "color": "#f0883e"
         }
       ]
     },
 
-    "error401": {
+    "session_expiry": {
       "title": "Session Expiry / 401 Error",
       "steps": [
         {
           "from": "user", "to": "envoy",
           "fromRight": true, "toLeft": true,
           "yOff": 10,
-          "label": "1", "text": "HTTPS request (expired / missing session)",
+          "label": "1", "text": "HTTPS request with expired or missing session cookie",
           "color": "#58a6ff"
         },
         {
           "from": "envoy", "to": "auth-proxy",
           "fromBottom": true, "toTop": true,
           "fromXOff": -30,
-          "label": "2", "text": "ext_authz check: GET /oauth2/auth",
+          "label": "2", "text": "ext_authz subrequest: GET /oauth2/auth (forwarded headers)",
           "color": "#58a6ff"
         },
         {
           "target": "auth-proxy",
           "badge": "!",
           "errColor": "#f85149",
-          "text": "Session expired or invalid — no valid cookie/token"
+          "text": "Middleware chain: cookie expired, no refresh token or refresh failed"
         },
         {
           "from": "auth-proxy", "to": "envoy",
           "fromTop": true, "toBottom": true,
           "fromXOff": 30,
-          "label": "4", "text": "401 Unauthorized",
+          "label": "4", "text": "401 Unauthorized — session invalid",
           "color": "#f85149"
         },
         {
           "from": "envoy", "to": "user",
           "fromLeft": true, "toRight": true,
           "yOff": -10,
-          "label": "5", "text": "Redirect to /oauth2/sign_in",
+          "label": "5", "text": "302 Redirect → /oauth2/sign_in?rd=<original_path>",
           "color": "#f85149"
         }
       ]
@@ -320,11 +341,11 @@ const diagram = {
           "actions": [
             "replaceHeaders",
             {"id": "status", "text": "302 Found", "style": "highlight"},
-            {"id": "location", "text": "Location: https://idp.example/authorize?client_id=rhoai&redirect_uri=…", "style": "add"}
+            {"id": "location", "text": "Location: https://idp.example/authorize?client_id=rhoai&scope=openid+email&redirect_uri=...", "style": "add"}
           ]
         },
         {
-          "step": 3, "phase": "request",
+          "step": 4, "phase": "request",
           "actions": [
             "replaceHeaders",
             {"id": "method", "text": "GET /oauth2/callback?code=abc123 HTTP/1.1", "style": "highlight"},
@@ -332,41 +353,43 @@ const diagram = {
           ]
         },
         {
-          "step": 4, "phase": "request",
+          "step": 5, "phase": "request",
           "actions": [
             "replaceHeaders",
             {"id": "method", "text": "POST /token HTTP/1.1", "style": "highlight"},
             {"id": "host", "text": "Host: idp.example.com", "style": "keep"},
             {"id": "grant", "text": "grant_type=authorization_code", "style": "add"},
-            {"id": "code", "text": "code=abc123&client_secret=***", "style": "add"}
+            {"id": "code", "text": "code=abc123&client_secret=***", "style": "add"},
+            {"id": "redir", "text": "redirect_uri=https://dashboard.rhoai.example.com/oauth2/callback", "style": "add"}
           ]
         },
         {
-          "step": 5, "phase": "response",
+          "step": 6, "phase": "response",
           "actions": [
             "replaceHeaders",
-            {"id": "tok", "text": "access_token: eyJhbG…", "style": "add"},
-            {"id": "id", "text": "id_token: eyJzdW…", "style": "add"},
-            {"id": "session", "text": "Session → AES-CFB encrypted cookie", "style": "add"}
+            {"id": "tok", "text": "access_token: eyJhbGciOiJSUzI1NiIs...", "style": "add"},
+            {"id": "id", "text": "id_token: eyJzdWIiOiJ1c2VyQGV4YW1...", "style": "add"},
+            {"id": "ref", "text": "refresh_token: dGhpcyBpcyBhIHJlZnJl...", "style": "add"},
+            {"id": "session", "text": "Session: AES-CFB encrypted + HMAC-SHA256 signed", "style": "add"}
           ]
         },
         {
-          "step": 6, "phase": "request",
+          "step": 7, "phase": "request",
           "actions": [
             "replaceHeaders",
             {"id": "method", "text": "GET / HTTP/1.1", "style": "keep"},
             {"id": "host", "text": "Host: dashboard-svc.ns.svc", "style": "keep"},
             {"id": "xuser", "text": "X-Auth-Request-User: user@example.com", "style": "add"},
             {"id": "xgroups", "text": "X-Auth-Request-Groups: system:authenticated", "style": "add"},
-            {"id": "bearer", "text": "Authorization: Bearer eyJhbG…", "style": "add"}
+            {"id": "bearer", "text": "Authorization: Bearer eyJhbGciOiJS...", "style": "add"}
           ]
         },
         {
-          "step": 7, "phase": "response",
+          "step": 8, "phase": "response",
           "actions": [
             "replaceHeaders",
             {"id": "status", "text": "200 OK", "style": "highlight"},
-            {"id": "cookie", "text": "Set-Cookie: _oauth2_proxy=…; HttpOnly; Secure", "style": "add"}
+            {"id": "cookie", "text": "Set-Cookie: _oauth2_proxy=<encrypted>; HttpOnly; Secure; SameSite=Lax", "style": "add"}
           ]
         }
       ],
@@ -374,8 +397,8 @@ const diagram = {
         {
           "step": 1, "phase": "request",
           "actions": [
-            {"id": "method", "text": "GET /api/v1/resource HTTP/1.1", "style": "highlight"},
-            {"id": "auth", "text": "Authorization: Bearer eyJhbG…(SA token)", "style": "highlight"},
+            {"id": "method", "text": "GET /api/v1/namespaces/ns/pods HTTP/1.1", "style": "highlight"},
+            {"id": "auth", "text": "Authorization: Bearer eyJhbGciOiJS...(SA token)", "style": "highlight"},
             {"id": "cookie", "style": "del"}
           ]
         },
@@ -384,44 +407,56 @@ const diagram = {
           "actions": [
             "replaceHeaders",
             {"id": "api", "text": "POST /apis/authentication.k8s.io/v1/tokenreviews", "style": "highlight"},
-            {"id": "tok", "text": "token: eyJhbG…(SA token)", "style": "add"}
+            {"id": "tok", "text": "spec.token: eyJhbGciOiJS...(SA token)", "style": "add"}
           ]
         },
         {
           "step": 3, "phase": "response",
           "actions": [
             "replaceHeaders",
-            {"id": "status", "text": "authenticated: true", "style": "add"},
-            {"id": "user", "text": "user: system:serviceaccount:ns:sa-name", "style": "add"}
+            {"id": "status", "text": "status.authenticated: true", "style": "add"},
+            {"id": "user", "text": "status.user.username: system:serviceaccount:ns:sa-name", "style": "add"},
+            {"id": "groups", "text": "status.user.groups: [system:serviceaccounts, ...]", "style": "add"}
           ]
         },
         {
-          "step": 4, "phase": "request",
+          "step": 4, "phase": "response",
+          "actions": [
+            "replaceHeaders",
+            {"id": "tier", "text": "Tier 1 (hardcoded): not matched", "style": "keep"},
+            {"id": "tier2", "text": "Tier 2 (static rules): not matched", "style": "keep"},
+            {"id": "tier3", "text": "Tier 3 (SAR): checking...", "style": "highlight"}
+          ]
+        },
+        {
+          "step": 5, "phase": "request",
           "actions": [
             "replaceHeaders",
             {"id": "api", "text": "POST /apis/authorization.k8s.io/v1/subjectaccessreviews", "style": "highlight"},
-            {"id": "verb", "text": "verb: get  resource: pods  namespace: ns", "style": "add"}
+            {"id": "verb", "text": "spec.resourceAttributes.verb: get", "style": "add"},
+            {"id": "res", "text": "spec.resourceAttributes.resource: pods", "style": "add"},
+            {"id": "ns", "text": "spec.resourceAttributes.namespace: ns", "style": "add"}
           ]
         },
         {
-          "step": 5, "phase": "response",
+          "step": 6, "phase": "response",
           "actions": [
             "replaceHeaders",
-            {"id": "allowed", "text": "allowed: true", "style": "add"},
-            {"id": "reason", "text": "reason: RBAC — role binding matches", "style": "add"}
+            {"id": "allowed", "text": "status.allowed: true", "style": "add"},
+            {"id": "reason", "text": "status.reason: RBAC — ClusterRoleBinding matches", "style": "add"}
           ]
         },
         {
-          "step": 6, "phase": "request",
+          "step": 7, "phase": "request",
           "actions": [
             "replaceHeaders",
-            {"id": "method", "text": "GET /api/v1/resource HTTP/1.1", "style": "keep"},
+            {"id": "method", "text": "GET /api/v1/namespaces/ns/pods HTTP/1.1", "style": "keep"},
             {"id": "xuser", "text": "X-Remote-User: system:serviceaccount:ns:sa-name", "style": "add"},
             {"id": "xgroups", "text": "X-Remote-Groups: system:serviceaccounts", "style": "add"}
           ]
         },
         {
-          "step": 7, "phase": "response",
+          "step": 8, "phase": "response",
           "actions": [
             "replaceHeaders",
             {"id": "status", "text": "200 OK", "style": "highlight"}
@@ -433,41 +468,60 @@ const diagram = {
           "step": 1, "phase": "request",
           "actions": [
             {"id": "method", "text": "GET /oauth2/sign_out HTTP/1.1", "style": "highlight"},
-            {"id": "cookie", "text": "Cookie: _oauth2_proxy=…", "style": "highlight"},
+            {"id": "cookie", "text": "Cookie: _oauth2_proxy=<encrypted>", "style": "highlight"},
             {"id": "auth", "style": "del"}
           ]
         },
         {
-          "step": 2, "phase": "request",
+          "step": 2, "phase": "response",
           "actions": [
             "replaceHeaders",
-            {"id": "api", "text": "DELETE /apis/oauth.openshift.io/v1/oauthaccesstokens/sha256~…", "style": "highlight"},
-            {"id": "bearer", "text": "Authorization: Bearer (access token)", "style": "add"}
+            {"id": "step", "text": "Middleware: decrypt session cookie (AES-CFB)", "style": "highlight"},
+            {"id": "step2", "text": "Verify HMAC-SHA256 signature", "style": "highlight"},
+            {"id": "step3", "text": "Extract access token from session", "style": "add"}
           ]
         },
         {
-          "step": 3, "phase": "response",
+          "step": 3, "phase": "request",
           "actions": [
             "replaceHeaders",
-            {"id": "status", "text": "200 OK — token deleted", "style": "add"}
+            {"id": "api", "text": "DELETE /apis/oauth.openshift.io/v1/oauthaccesstokens/sha256~abc...", "style": "highlight"},
+            {"id": "bearer", "text": "Authorization: Bearer <sa-token>", "style": "add"}
           ]
         },
         {
           "step": 4, "phase": "response",
           "actions": [
             "replaceHeaders",
+            {"id": "status", "text": "200 OK — OAuthAccessToken deleted", "style": "add"},
+            {"id": "note", "text": "Token revoked at OpenShift OAuth server", "style": "add"}
+          ]
+        },
+        {
+          "step": 5, "phase": "response",
+          "actions": [
+            "replaceHeaders",
+            {"id": "err1", "text": "Session destroyed", "style": "err"},
+            {"id": "err2", "text": "Cookie invalidated", "style": "err"},
+            {"id": "err3", "text": "Token revoked (cannot be reused)", "style": "err"}
+          ]
+        },
+        {
+          "step": 6, "phase": "response",
+          "actions": [
+            "replaceHeaders",
             {"id": "status", "text": "302 Found", "style": "highlight"},
             {"id": "location", "text": "Location: /oauth2/sign_in", "style": "add"},
-            {"id": "clear", "text": "Set-Cookie: _oauth2_proxy=; Max-Age=0", "style": "err"}
+            {"id": "clear", "text": "Set-Cookie: _oauth2_proxy=; Max-Age=0; HttpOnly; Secure", "style": "err"}
           ]
         }
       ],
-      "error401": [
+      "session_expiry": [
         {
           "step": 1, "phase": "request",
           "actions": [
             {"id": "method", "text": "GET /dashboard HTTP/1.1", "style": "highlight"},
-            {"id": "cookie", "text": "Cookie: _oauth2_proxy=…(expired)", "style": "err"},
+            {"id": "cookie", "text": "Cookie: _oauth2_proxy=<expired>", "style": "err"},
             {"id": "auth", "style": "del"}
           ]
         },
@@ -477,22 +531,27 @@ const diagram = {
             "replaceHeaders",
             {"id": "method", "text": "GET /oauth2/auth HTTP/1.1 (ext_authz subrequest)", "style": "highlight"},
             {"id": "fwd", "text": "X-Forwarded-For: 10.0.0.1", "style": "add"},
-            {"id": "cookie", "text": "Cookie: _oauth2_proxy=…(expired)", "style": "err"}
+            {"id": "fwdhost", "text": "X-Forwarded-Host: dashboard.rhoai.example.com", "style": "add"},
+            {"id": "cookie", "text": "Cookie: _oauth2_proxy=<expired>", "style": "err"}
           ]
         },
         {
           "step": 3, "phase": "response",
           "actions": [
             "replaceHeaders",
-            {"id": "err1", "text": "Session validation failed", "style": "err"},
-            {"id": "err2", "text": "Cookie expired or HMAC invalid", "style": "err"}
+            {"id": "chain1", "text": "1. K8s SA token: not present", "style": "keep"},
+            {"id": "chain2", "text": "2. OAuth bearer: not present", "style": "keep"},
+            {"id": "chain3", "text": "3. JWT bearer: not present", "style": "keep"},
+            {"id": "chain4", "text": "4. Session cookie: EXPIRED", "style": "err"},
+            {"id": "chain5", "text": "5. Refresh token: expired or missing", "style": "err"}
           ]
         },
         {
           "step": 4, "phase": "response",
           "actions": [
             "replaceHeaders",
-            {"id": "status", "text": "401 Unauthorized", "style": "err"}
+            {"id": "status", "text": "401 Unauthorized", "style": "err"},
+            {"id": "note", "text": "No valid authentication method succeeded", "style": "err"}
           ]
         },
         {
@@ -500,7 +559,8 @@ const diagram = {
           "actions": [
             "replaceHeaders",
             {"id": "status", "text": "302 Found", "style": "err"},
-            {"id": "location", "text": "Location: /oauth2/sign_in?rd=%2Fdashboard", "style": "add"}
+            {"id": "location", "text": "Location: /oauth2/sign_in?rd=%2Fdashboard", "style": "add"},
+            {"id": "note", "text": "Original path preserved for post-login redirect", "style": "add"}
           ]
         }
       ]
@@ -510,70 +570,77 @@ const diagram = {
   "tooltips": {
     "envoy": {
       "title": "Istio Gateway (Envoy Proxy)",
-      "description": "TLS-terminating reverse proxy. Routes HTTPRoute CRs to backend services. Queries kube-auth-proxy via ext_authz before forwarding requests.",
+      "description": "TLS-terminating reverse proxy at the cluster edge. Routes HTTPRoute CRs to backend services. Queries kube-auth-proxy via ext_authz filter before forwarding requests to upstream. Returns 202 (proceed) or 401 (redirect to login).",
       "details": {
         "Port": "443/TCP HTTPS (TLS 1.3)",
-        "Protocol": "ext_authz filter → subrequest to /oauth2/auth",
-        "Role": "Ingress + authentication gate",
+        "Protocol": "ext_authz → subrequest to /oauth2/auth",
+        "Auth Check": "202 Accepted = pass, 401 = redirect",
         "TLS": "Terminates external TLS, re-encrypts to backends"
       }
     },
     "auth-proxy": {
       "title": "kube-auth-proxy",
-      "description": "FIPS-compliant authentication proxy derived from oauth2-proxy. Supports OIDC, OpenShift OAuth, JWT, and ServiceAccount tokens. NOT in the data path — only validates credentials.",
+      "description": "FIPS-compliant (strictfipsruntime) authentication proxy deployed as an operator-managed sidecar. Implements a layered middleware pipeline: scope injection → health checks → metrics → session loading (K8s token → OAuth bearer → JWT → basic auth → session cookie) → header injection → upstream proxy.",
       "details": {
         "Port": "4180/TCP HTTP",
-        "Auth Methods": "OIDC, OpenShift OAuth, JWT, Basic, SA tokens",
-        "Sessions": "AES-CFB cookie (split >4KB) or Redis (AES-GCM)",
+        "Mode": "PROXY_MODE=auth",
+        "Providers": "OIDC, OpenShift OAuth, JWT, Basic, K8s SA",
+        "Sessions": "AES-CFB cookie (auto-split >4KB) or Redis (AES-GCM)",
         "Endpoints": "/oauth2/start, /callback, /auth, /sign_out, /userinfo",
-        "FIPS": "CGO_ENABLED=1, GOEXPERIMENT=strictfipsruntime"
+        "FIPS": "CGO_ENABLED=1, GOEXPERIMENT=strictfipsruntime, UBI9 OpenSSL"
       }
     },
     "rbac-proxy": {
       "title": "kube-rbac-proxy",
-      "description": "Authorization sidecar deployed in component pods. Validates bearer tokens via TokenReview and checks permissions via SubjectAccessReview. Three-tier authorization: hardcoded, static, and SAR.",
+      "description": "Authorization sidecar using a three-tier union authorizer (allow if ANY tier allows): Tier 1 — hardcoded rules (prometheus-k8s → GET /metrics always allowed), Tier 2 — static YAML rules (resource/subject patterns), Tier 3 — SubjectAccessReview delegation to the K8s API server.",
       "details": {
         "Port": "8443/TCP HTTPS (TLS 1.2+)",
-        "Authorization": "Permissive-union of 3 tiers",
-        "Cache": "Positive: 5 min, Negative: 30 sec",
+        "Authorization": "Union of 3 tiers (any-allow)",
+        "Positive Cache": "5 minutes",
+        "Negative Cache": "30 seconds",
         "Headers": "Injects x-remote-user, x-remote-groups"
       }
     },
     "k8s-api": {
       "title": "Kubernetes API Server",
-      "description": "Handles TokenReview for authentication and SubjectAccessReview for authorization decisions. Also manages OAuthAccessToken lifecycle for sign-out.",
+      "description": "Handles TokenReview (authentication.k8s.io/v1) for token validation and SubjectAccessReview (authorization.k8s.io/v1) for RBAC decisions. Also manages OAuthAccessToken lifecycle — tokens are deleted via DELETE on sign-out to prevent reuse.",
       "details": {
-        "TokenReview": "authentication.k8s.io/v1",
-        "SAR": "authorization.k8s.io/v1",
-        "OAuth Tokens": "oauth.openshift.io/v1"
+        "TokenReview": "authentication.k8s.io/v1 — validate bearer tokens",
+        "SAR": "authorization.k8s.io/v1 — RBAC authorization decisions",
+        "OAuth Tokens": "oauth.openshift.io/v1 — token revocation on sign-out",
+        "Auth": "ServiceAccount token (in-cluster)"
       }
     },
     "oidc": {
       "title": "External OIDC Provider",
-      "description": "Standards-compliant OpenID Connect provider. Handles user authentication and issues ID tokens + access tokens. Supports BYOIDC (Bring Your Own IDP) starting in OCP 4.19.",
+      "description": "Standards-compliant OpenID Connect provider (Keycloak, Azure AD, etc.). Issues ID tokens + access tokens via OAuth 2.0 authorization code flow. JWKS endpoint provides public keys for JWT verification. Supports RP-initiated logout via end_session_endpoint.",
       "details": {
-        "Protocol": "OpenID Connect (OAuth 2.0)",
-        "Endpoints": "Authorization, Token, UserInfo, JWKS",
+        "Protocol": "OpenID Connect / OAuth 2.0",
+        "Flow": "Authorization Code Grant",
+        "Endpoints": "authorize, token, userinfo, JWKS, end_session",
+        "Token Types": "ID token, access token, refresh token",
         "Port": "443/TCP HTTPS (TLS 1.2+)"
       }
     },
     "upstream": {
       "title": "Upstream Application",
-      "description": "RHOAI components served behind the gateway: Dashboard, Notebooks, KServe, DSP, TrustyAI. Receives pre-authenticated requests with identity headers.",
+      "description": "RHOAI components served behind the authentication/authorization gateway. Receives pre-authenticated requests with identity headers injected by the proxy sidecar. Never handles authentication directly.",
       "details": {
         "Protocol": "HTTP (unencrypted within pod)",
-        "Auth Headers": "X-Auth-Request-User, X-Auth-Request-Groups",
-        "Components": "Dashboard, Notebooks, KServe, DSP"
+        "Identity Headers": "X-Auth-Request-User, X-Auth-Request-Groups",
+        "Components": "Dashboard, Notebooks, KServe, DSP, TrustyAI",
+        "Deployed By": "rhods-operator (sidecar injection)"
       }
     },
     "redis": {
       "title": "Redis Session Store",
-      "description": "Optional distributed session storage. Supports standalone, Sentinel, and Cluster topologies. Sessions encrypted with AES-GCM using per-session secrets. Cookie stores only a session ticket ID.",
+      "description": "Optional distributed session backend for multi-replica deployments. Cookie stores only a ticket ID; encrypted session data (AES-GCM with per-session secret) resides in Redis. Distributed locking prevents concurrent refresh token races across replicas.",
       "details": {
         "Port": "6379/TCP",
         "Encryption": "AES-GCM per-session keys",
         "Topologies": "Standalone, Sentinel, Cluster",
-        "Locking": "Distributed locks prevent refresh races"
+        "Locking": "Distributed locks prevent refresh races",
+        "Ticket System": "Cookie = session ID only, data in Redis"
       }
     }
   },
@@ -582,7 +649,7 @@ const diagram = {
     {"color": "#f0883e", "label": "Authentication (OIDC / OAuth)"},
     {"color": "#58a6ff", "label": "Request Path"},
     {"color": "#3fb950", "label": "Response / Success"},
-    {"color": "#f85149", "label": "Error / Unauthorized"},
+    {"color": "#f85149", "label": "Error / Revocation"},
     {"color": "#8b949e", "label": "Infrastructure"},
     {"color": "#d2a8ff", "label": "External Provider"}
   ]

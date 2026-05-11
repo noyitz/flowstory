@@ -9,22 +9,21 @@ AI-agent-first animated flow diagram framework. Define architecture flows in JSO
 - **Declarative JSON**: Define nodes, flows, tooltips, and inspector mutations in a single JSON file
 - **Zero dependencies**: Pure canvas-based rendering, no external libraries
 
-## Quick Start
+## Quick Start — Generate a Diagram in 2 Minutes
 
-```html
-<script type="module">
-  import { FlowStory } from 'https://unpkg.com/flowstory';
-  const viz = new FlowStory(document.getElementById('canvas'));
-  await viz.load('./diagram.json');
-  viz.play();
-</script>
-```
+**No install needed.** Open Claude Code, paste one prompt, get an animated diagram.
+
+**[Quick Start Guide](docs/quick-start-prompt.md)** — step-by-step instructions with the prompt to copy-paste.
+
+## Live Example
+
+[AI Inference Gateway — Flow Visualizer](https://noyitz.github.io/ai-gateway-docs/ai-gateway-flow.html)
 
 ## For AI Agents
 
-See [CLAUDE.md](CLAUDE.md) for the complete guide to generating FlowStory diagrams.
+See [CLAUDE.md](CLAUDE.md) for the complete schema reference.
 
-See [docs/agent-prompt.md](docs/agent-prompt.md) for a copy-pasteable prompt you can use with any AI tool.
+See [docs/agent-prompt.md](docs/agent-prompt.md) for a copy-pasteable prompt for any AI tool.
 
 ## Examples
 
