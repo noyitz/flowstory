@@ -1,0 +1,1064 @@
+{
+  "meta": {
+    "title": "AI Inference Gateway — Flow Visualizer",
+    "author": "Noy Tzikow",
+    "branding": {
+      "logo": "redhat-logo.svg",
+      "title": "Red Hat"
+    }
+  },
+  "canvas": {
+    "width": 1250,
+    "height": 1050
+  },
+  "nodes": {
+    "user": { "x": -20, "y": 155, "w": 100, "h": 50, "label": "Client / Agent", "type": "icon" },
+
+    "cluster": { "x": 120, "y": 80, "w": 1070, "h": 960, "type": "boundary", "label": "kubernetes cluster" },
+    "aigw": { "x": 155, "y": 115, "w": 1010, "h": 740, "type": "container", "label": "AI Inference Gateway", "color": "#58a6ff" },
+
+    "gw": { "x": 250, "y": 140, "w": 700, "h": 80, "label": "Istio Gateway", "sublabel": "(Envoy)", "color": "#58a6ff", "fontSize": 20 },
+
+    "wasm": { "x": 190, "y": 305, "w": 300, "h": 280, "type": "container", "label": "Kuadrant Wasm Shim", "color": "#f0883e" },
+    "auth": { "x": 215, "y": 360, "w": 250, "h": 60, "label": "Auth", "sublabel": "(Authorino)", "color": "#f0883e", "fontSize": 16, "inner": true },
+    "rlimit": { "x": 215, "y": 445, "w": 250, "h": 60, "label": "Rate Limit", "sublabel": "(Limitador)", "color": "#f0883e", "fontSize": 16, "inner": true },
+
+    "ipp": {
+      "x": 740, "y": 260, "w": 380, "h": 500, "type": "container", "label": "Payload Processor / IPP (ext_proc)", "color": "#d2a8ff",
+      "sections": [
+        { "label": "Request Plugins →", "y": 300, "height": 260, "color": "#58a6ff" },
+        { "label": "← Response Plugins", "y": 623, "height": 105, "color": "#3fb950" }
+      ]
+    },
+    "p_rguard":  { "x": 770, "y": 318, "w": 320, "h": 40, "label": "request-guard (nemo)", "color": "#58a6ff", "type": "plugin", "inner": true, "fontSize": 14, "soon": true },
+    "p_ims":     { "x": 770, "y": 360, "w": 320, "h": 40, "label": "intelligent-model-selection", "color": "#58a6ff", "type": "plugin", "inner": true, "fontSize": 12, "soon": true },
+    "p_mpr":     { "x": 770, "y": 402, "w": 320, "h": 36, "label": "model-provider-resolver", "color": "#58a6ff", "type": "plugin", "inner": true, "fontSize": 14 },
+    "p_bfth":    { "x": 770, "y": 440, "w": 320, "h": 36, "label": "body-field-to-header", "color": "#58a6ff", "type": "plugin", "inner": true, "fontSize": 14 },
+    "p_bmth":    { "x": 770, "y": 478, "w": 320, "h": 36, "label": "base-model-to-header", "color": "#58a6ff", "type": "plugin", "inner": true, "fontSize": 14 },
+    "p_at_req":  { "x": 770, "y": 516, "w": 320, "h": 36, "label": "api-translation", "sublabel": "(request)", "color": "#58a6ff", "type": "plugin", "inner": true, "fontSize": 14 },
+    "p_aki":     { "x": 770, "y": 554, "w": 320, "h": 36, "label": "apikey-injection", "color": "#58a6ff", "type": "plugin", "inner": true, "fontSize": 14 },
+    "p_at_resp": { "x": 770, "y": 631, "w": 320, "h": 36, "label": "api-translation", "sublabel": "(response)", "color": "#3fb950", "type": "plugin", "inner": true, "fontSize": 14 },
+    "p_resp_guard": { "x": 770, "y": 669, "w": 320, "h": 40, "label": "response-guard (nemo)", "color": "#3fb950", "type": "plugin", "inner": true, "fontSize": 14, "soon": true },
+
+    "openai":    { "x": -40, "y": 300, "w": 140, "h": 55, "label": "OpenAI",       "sublabel": "gpt-4o-mini",      "color": "#3fb950", "fontSize": 15 },
+    "anthropic": { "x": -40, "y": 365, "w": 140, "h": 55, "label": "Anthropic",    "sublabel": "claude-haiku-4-5",  "color": "#3fb950", "fontSize": 15 },
+    "azure":     { "x": -40, "y": 430, "w": 140, "h": 55, "label": "Azure OpenAI", "sublabel": "gpt-4.1-mini",     "color": "#3fb950", "fontSize": 14 },
+    "bedrock":   { "x": -40, "y": 495, "w": 140, "h": 55, "label": "Bedrock",      "sublabel": "claude-3-haiku",   "color": "#3fb950", "fontSize": 15 },
+    "vertex":    { "x": -40, "y": 560, "w": 140, "h": 55, "label": "Vertex AI",    "sublabel": "gemini-2.5-flash", "color": "#3fb950", "fontSize": 15 },
+
+    "maas": { "x": 230, "y": 640, "w": 220, "h": 55, "label": "MaaS API", "sublabel": "key validation", "color": "#79c0ff", "fontSize": 15 },
+
+    "epp": { "x": 460, "y": 770, "w": 260, "h": 70, "type": "container", "label": "llm-d Scheduler / EPP (ext_proc)", "color": "#79c0ff" },
+    "sched": { "x": 490, "y": 792, "w": 200, "h": 40, "label": "Endpoint Picker", "sublabel": "Pod Selection", "color": "#79c0ff", "fontSize": 14, "inner": true },
+
+    "pool": {
+      "x": 200, "y": 870, "w": 1000, "h": 175, "type": "boundary", "label": "InferencePool",
+      "subBoundaries": [
+        { "x": 235, "y": 933, "w": 230, "h": 82, "color": "#d2a8ff44" },
+        { "x": 845, "y": 933, "w": 230, "h": 82, "color": "#d2a8ff44" }
+      ]
+    },
+    "sidecar": { "x": 380, "y": 890, "w": 130, "h": 38, "label": "Sidecar", "color": "#8b949e", "fontSize": 14 },
+    "decode":  { "x": 250, "y": 945, "w": 200, "h": 60, "label": "vLLM", "sublabel": "Decode Pod A", "color": "#d2a8ff", "fontSize": 16, "stackCount": 2, "stackOffset": { "dx": -8, "dy": -5 } },
+    "nixl":    { "x": 530, "y": 950, "w": 240, "h": 50, "label": "NIXL", "sublabel": "KV Transfer (KVXfer)", "color": "#8b949e", "fontSize": 14 },
+    "prefill": { "x": 860, "y": 945, "w": 200, "h": 60, "label": "vLLM", "sublabel": "Prefill Pod B", "color": "#d2a8ff", "fontSize": 16, "stackCount": 2, "stackOffset": { "dx": -8, "dy": -5 } }
+  },
+  "tooltips": {
+    "gw": {
+      "title": "Istio Gateway (Envoy)",
+      "description": "Envoy-based reverse proxy that receives all inference requests. Runs Kuadrant Wasm filter for auth/rate-limiting and ext_proc filters for payload processing and scheduling.",
+      "details": [
+        ["Filters", "Kuadrant Wasm Shim, IPP (ext_proc), EPP (ext_proc)"],
+        ["Protocol", "HTTP/1.1, HTTP/2, gRPC"],
+        ["Routing", "External model providers or on-cluster InferencePool"],
+        ["Port", "8080 (HTTP), 8443 (HTTPS)"]
+      ],
+      "links": [
+        ["Kuadrant Docs", "https://docs.kuadrant.io"],
+        ["Kuadrant Operator", "https://github.com/Kuadrant/kuadrant-operator"]
+      ]
+    },
+    "p_rguard": {
+      "title": "request-guard (nemo)",
+      "description": "NVIDIA NeMo Guardrails — evaluates safety policies on the incoming request before any processing. Can block requests that violate content policies.",
+      "details": [
+        ["Status", "Coming Soon"],
+        ["Phase", "Request"],
+        ["Type", "ext_proc plugin"]
+      ],
+      "links": [
+        ["IPP Upstream", "https://github.com/llm-d/llm-d-inference-payload-processor"],
+        ["Plugins (downstream)", "https://github.com/opendatahub-io/ai-gateway-payload-processing"]
+      ]
+    },
+    "p_ims": {
+      "title": "intelligent-model-selection",
+      "description": "Automatically selects the optimal model or provider based on request characteristics, cost, latency, and availability.",
+      "details": [
+        ["Status", "Coming Soon"],
+        ["Phase", "Request"],
+        ["Type", "ext_proc plugin"]
+      ],
+      "links": [
+        ["IPP Upstream", "https://github.com/llm-d/llm-d-inference-payload-processor"],
+        ["Plugins (downstream)", "https://github.com/opendatahub-io/ai-gateway-payload-processing"]
+      ]
+    },
+    "p_mpr": {
+      "title": "model-provider-resolver",
+      "description": "Uses a Kubernetes reconciler to watch ExternalModel CRDs. Resolves the model name to a provider, target model ID, and endpoint URL.",
+      "details": [
+        ["CRD", "ExternalModel (inference.opendatahub.io)"],
+        ["Output", "CycleState: provider, targetModel, endpoint"],
+        ["Phase", "Request"],
+        ["Type", "ext_proc plugin"]
+      ],
+      "links": [
+        ["IPP Upstream", "https://github.com/llm-d/llm-d-inference-payload-processor"],
+        ["Plugins (downstream)", "https://github.com/opendatahub-io/ai-gateway-payload-processing"]
+      ]
+    },
+    "p_bfth": {
+      "title": "body-field-to-header",
+      "description": "Extracts the \"model\" field from the JSON request body and sets it as the X-Gateway-Model-Name HTTP header for model-based routing.",
+      "details": [
+        ["Header Set", "X-Gateway-Model-Name"],
+        ["Phase", "Request"],
+        ["Type", "ext_proc plugin"]
+      ],
+      "links": [
+        ["IPP Upstream", "https://github.com/llm-d/llm-d-inference-payload-processor"],
+        ["Plugins (downstream)", "https://github.com/opendatahub-io/ai-gateway-payload-processing"]
+      ]
+    },
+    "p_bmth": {
+      "title": "base-model-to-header",
+      "description": "Resolves LoRA adapter names to their base model using Kubernetes ConfigMaps. Sets X-Gateway-Base-Model-Name header so EPP can select pods running the correct base model.",
+      "details": [
+        ["Header Set", "X-Gateway-Base-Model-Name"],
+        ["Data Source", "Kubernetes ConfigMaps (adapter→base model mappings)"],
+        ["Use Case", "LoRA adapter routing to correct InferencePool"],
+        ["Phase", "Request"],
+        ["Type", "ext_proc plugin"]
+      ],
+      "links": [
+        ["IPP Upstream", "https://github.com/llm-d/llm-d-inference-payload-processor"],
+        ["Plugins (downstream)", "https://github.com/opendatahub-io/ai-gateway-payload-processing"]
+      ]
+    },
+    "p_at_req": {
+      "title": "api-translation (request)",
+      "description": "Translates OpenAI Chat Completions format to provider-native API. Handles path rewriting, header mutations, and body transformation.",
+      "details": [
+        ["Example", "OpenAI → Anthropic Messages API"],
+        ["Path Rewrite", "/v1/chat/completions → /v1/messages"],
+        ["Headers Added", "anthropic-version: 2023-06-01"],
+        ["Phase", "Request"],
+        ["Type", "ext_proc plugin"]
+      ],
+      "links": [
+        ["IPP Upstream", "https://github.com/llm-d/llm-d-inference-payload-processor"],
+        ["Plugins (downstream)", "https://github.com/opendatahub-io/ai-gateway-payload-processing"]
+      ]
+    },
+    "p_aki": {
+      "title": "apikey-injection",
+      "description": "Reads the provider API key from a Kubernetes Secret and injects the appropriate auth header for the target provider.",
+      "details": [
+        ["Secret Label", "inference.networking.k8s.io/bbr-managed"],
+        ["OpenAI", "Authorization: Bearer ..."],
+        ["Anthropic", "x-api-key: ..."],
+        ["Azure", "api-key: ..."],
+        ["Phase", "Request"],
+        ["Type", "ext_proc plugin"]
+      ],
+      "links": [
+        ["IPP Upstream", "https://github.com/llm-d/llm-d-inference-payload-processor"],
+        ["Plugins (downstream)", "https://github.com/opendatahub-io/ai-gateway-payload-processing"]
+      ]
+    },
+    "p_at_resp": {
+      "title": "api-translation (response)",
+      "description": "Translates provider-native response back to OpenAI Chat Completions format. Normalizes content, stop reasons, and usage tokens.",
+      "details": [
+        ["Example", "Anthropic → OpenAI format"],
+        ["Transforms", "content→choices, stop_reason→finish_reason, usage normalization"],
+        ["Phase", "Response"],
+        ["Type", "ext_proc plugin"]
+      ],
+      "links": [
+        ["IPP Upstream", "https://github.com/llm-d/llm-d-inference-payload-processor"],
+        ["Plugins (downstream)", "https://github.com/opendatahub-io/ai-gateway-payload-processing"]
+      ]
+    },
+    "p_resp_guard": {
+      "title": "response-guard (nemo)",
+      "description": "NVIDIA NeMo Guardrails — evaluates content policies on the provider response after api-translation converts it to OpenAI format.",
+      "details": [
+        ["Status", "Coming Soon"],
+        ["Phase", "Response"],
+        ["Type", "ext_proc plugin"]
+      ],
+      "links": [
+        ["IPP Upstream", "https://github.com/llm-d/llm-d-inference-payload-processor"],
+        ["Plugins (downstream)", "https://github.com/opendatahub-io/ai-gateway-payload-processing"]
+      ]
+    },
+    "auth": {
+      "title": "Auth (Authorino)",
+      "logo": "redhat-logo.svg",
+      "description": "Authorino auth server called via gRPC from the Wasm shim. Validates the MaaS API key and resolves subscription info.",
+      "details": [
+        ["Protocol", "gRPC (dispatch_grpc_call)"],
+        ["Validation", "Calls MaaS API /internal/v1/api-keys/validate"],
+        ["Headers Injected", "X-MaaS-Username, X-MaaS-Subscription"],
+        ["Error", "401 Unauthorized"]
+      ],
+      "links": [
+        ["Authorino Repo", "https://github.com/Kuadrant/authorino"]
+      ]
+    },
+    "rlimit": {
+      "title": "Rate Limit (Limitador)",
+      "logo": "redhat-logo.svg",
+      "description": "Limitador rate-limit server called via gRPC from the Wasm shim. Implements token-based rate limiting via TokenRateLimitPolicy.",
+      "details": [
+        ["Protocol", "gRPC"],
+        ["Request Phase", "Check if token quota allows"],
+        ["Response Phase", "Read usage.total_tokens, report consumed"],
+        ["Policy", "TokenRateLimitPolicy"],
+        ["Error", "429 Too Many Requests"]
+      ],
+      "links": [
+        ["Limitador Repo", "https://github.com/Kuadrant/limitador"]
+      ]
+    },
+    "maas": {
+      "title": "MaaS API",
+      "logo": "redhat-logo.svg",
+      "description": "MaaS API server that manages API keys, subscriptions, and model listings. Called by Authorino during auth validation. Requires 3 CRDs to be created for each model offering.",
+      "details": [
+        ["Database", "PostgreSQL"],
+        ["Endpoints", "/v1/models, /v1/api-keys, /internal/v1/api-keys/validate"],
+        ["Called By", "Authorino (HTTP callback)"],
+        ["CRD: MaaSModelRef", "Maps user-facing model name to provider endpoint and target model ID"],
+        ["CRD: MaaSAuth", "Configures API key authentication via K8s Secret"],
+        ["CRD: MaaSSubscription", "Defines quota — associates user/team with allowed models and rate limits"]
+      ],
+      "links": [
+        ["MaaS Repo", "https://github.com/opendatahub-io/models-as-a-service"],
+        ["MaaSModelRef CRD", "https://opendatahub-io.github.io/models-as-a-service/dev/reference/crds/maas-model-ref/"],
+        ["MaaSAuth CRD", "https://opendatahub-io.github.io/models-as-a-service/dev/reference/crds/maas-auth/"],
+        ["MaaSSubscription CRD", "https://opendatahub-io.github.io/models-as-a-service/dev/reference/crds/maas-subscription/"]
+      ]
+    },
+    "epp": {
+      "title": "llm-d Scheduler / EPP",
+      "description": "An ext_proc filter like IPP. Runs the Endpoint Picker Proxy (EPP) to select the optimal pod for on-cluster inference.",
+      "details": [
+        ["Type", "ext_proc filter"],
+        ["Function", "Pod selection for InferencePool"],
+        ["Supports", "P/D disaggregated serving, prefix caching"]
+      ],
+      "links": [
+        ["llm-d", "https://github.com/llm-d"],
+        ["Gateway API IE", "https://gateway-api-inference-extension.sigs.k8s.io/"]
+      ]
+    },
+    "sched": {
+      "title": "Endpoint Picker",
+      "description": "Selects the optimal pod for disaggregated serving. Routes to Prefill or Decode variants based on KV cache utilization and model affinity.",
+      "details": [
+        ["Metrics", "KV cache utilization, queue depth, model affinity"],
+        ["Output", "Selected pod IP (Prefill + Decode)"],
+        ["Mode", "P/D disaggregation or unified"]
+      ],
+      "links": [
+        ["llm-d Scheduler", "https://github.com/llm-d/llm-d-inference-scheduler"]
+      ]
+    },
+    "sidecar": {
+      "title": "Sidecar",
+      "description": "Coordinates the P/D disaggregation transaction. Communicates with the prefill worker IP and orchestrates the KV cache transfer to the decode worker.",
+      "details": [
+        ["Role", "Transaction coordinator"],
+        ["Coordinates", "Prefill worker IP ↔ Decode worker"],
+        ["Triggers", "KVXfer metadata exchange"]
+      ]
+    },
+    "prefill": {
+      "title": "Prefill Pod B (vLLM)",
+      "description": "Processes the input prompt and generates the initial KV cache. Returns KVXfer metadata to enable the decode pod to pull KV cache via NIXL.",
+      "details": [
+        ["Engine", "vLLM"],
+        ["Function", "Prompt processing, KV cache generation"],
+        ["Output", "KVXfer metadata"],
+        ["Transfer", "Via NIXL to Decode Pod"]
+      ],
+      "links": [
+        ["vLLM", "https://github.com/vllm-project/vllm"],
+        ["vLLM Docs", "https://docs.vllm.ai/"]
+      ]
+    },
+    "decode": {
+      "title": "Decode Pod A (vLLM)",
+      "description": "Generates output tokens auto-regressively using KV cache pulled from the prefill pod via NIXL high-speed interconnect.",
+      "details": [
+        ["Engine", "vLLM"],
+        ["Function", "Auto-regressive token generation"],
+        ["Input", "KV cache via NIXL pull"],
+        ["Response", "Streamed back to Gateway"]
+      ],
+      "links": [
+        ["vLLM", "https://github.com/vllm-project/vllm"],
+        ["vLLM Docs", "https://docs.vllm.ai/"]
+      ]
+    },
+    "nixl": {
+      "title": "NIXL — KV Transfer",
+      "description": "NVIDIA Inference Xfer Library. High-speed KV cache transfer between prefill and decode pods over GPU-direct RDMA or Data Center Network.",
+      "details": [
+        ["Full Name", "NVIDIA Inference Xfer Library"],
+        ["Transport", "GPU-direct RDMA, DCN"],
+        ["Direction", "Decode pulls from Prefill"],
+        ["Metadata", "KVXfer descriptors"]
+      ],
+      "links": [
+        ["NIXL Repo", "https://github.com/ai-dynamo/nixl"]
+      ]
+    },
+    "anthropic": {
+      "title": "Anthropic",
+      "description": "Claude API endpoint. Receives requests translated from OpenAI format to Anthropic Messages API format. Requires an ExternalModel CRD to configure.",
+      "details": [
+        ["Model", "claude-haiku-4-5"],
+        ["API", "/v1/messages"],
+        ["Auth Header", "x-api-key"],
+        ["Translation", "OpenAI ↔ Anthropic Messages"],
+        ["CRD", "ExternalModel (inference.opendatahub.io)"],
+        ["CRD Config", "provider: anthropic, targetModel: claude-haiku-4-5-20251001, url: https://api.anthropic.com"]
+      ],
+      "links": [
+        ["Anthropic Provider Guide", "https://github.com/opendatahub-io/ai-gateway-payload-processing/blob/main/docs/providers/anthropic.md"],
+        ["ExternalModel CRD", "https://github.com/opendatahub-io/models-as-a-service"]
+      ]
+    },
+    "openai": {
+      "title": "OpenAI",
+      "description": "OpenAI API endpoint. Requests pass through without format translation (native OpenAI format). Requires an ExternalModel CRD.",
+      "details": [
+        ["Model", "gpt-4o-mini"],
+        ["API", "/v1/chat/completions"],
+        ["Auth Header", "Authorization: Bearer"],
+        ["Translation", "None (native)"],
+        ["CRD", "ExternalModel (inference.opendatahub.io)"],
+        ["CRD Config", "provider: openai, targetModel: gpt-4o-mini, url: https://api.openai.com"]
+      ],
+      "links": [
+        ["OpenAI Provider Guide", "https://github.com/opendatahub-io/ai-gateway-payload-processing/blob/main/docs/providers/openai.md"],
+        ["ExternalModel CRD", "https://github.com/opendatahub-io/models-as-a-service"]
+      ]
+    },
+    "azure": {
+      "title": "Azure OpenAI",
+      "description": "Azure OpenAI endpoint. Uses api-key header. Content filter fields stripped. Requires an ExternalModel CRD.",
+      "details": [
+        ["Model", "gpt-4.1-mini"],
+        ["Auth Header", "api-key"],
+        ["Specifics", "Content filter fields stripped"],
+        ["CRD", "ExternalModel (inference.opendatahub.io)"],
+        ["CRD Config", "provider: azure, targetModel: gpt-4.1-mini, url: https://{resource}.openai.azure.com"]
+      ],
+      "links": [
+        ["Azure Provider Guide", "https://github.com/opendatahub-io/ai-gateway-payload-processing/blob/main/docs/providers/azure-openai.md"],
+        ["ExternalModel CRD", "https://github.com/opendatahub-io/models-as-a-service"]
+      ]
+    },
+    "bedrock": {
+      "title": "AWS Bedrock",
+      "description": "AWS Bedrock endpoint (OpenAI-compatible). Uses base64-encoded access key. Requires an ExternalModel CRD.",
+      "details": [
+        ["Model", "claude-3-haiku"],
+        ["API", "/v1/chat/completions"],
+        ["Auth", "Base64 access key"],
+        ["CRD", "ExternalModel (inference.opendatahub.io)"],
+        ["CRD Config", "provider: bedrock, targetModel: claude-3-haiku, url: https://bedrock-runtime.{region}.amazonaws.com"]
+      ],
+      "links": [
+        ["Bedrock Provider Guide", "https://github.com/opendatahub-io/ai-gateway-payload-processing/blob/main/docs/providers/aws-bedrock.md"],
+        ["ExternalModel CRD", "https://github.com/opendatahub-io/models-as-a-service"]
+      ]
+    },
+    "vertex": {
+      "title": "Google Vertex AI",
+      "description": "Vertex AI endpoint (OpenAI-compatible). Path rewritten to Vertex format. Requires an ExternalModel CRD.",
+      "details": [
+        ["Model", "gemini-2.5-flash"],
+        ["Path Rewrite", "/v1beta1/projects/{proj}/locations/{loc}/endpoints/openapi/chat/completions"],
+        ["CRD", "ExternalModel (inference.opendatahub.io)"],
+        ["CRD Config", "provider: vertex, targetModel: gemini-2.5-flash, url: https://{location}-aiplatform.googleapis.com"]
+      ],
+      "links": [
+        ["Vertex Provider Guide", "https://github.com/opendatahub-io/ai-gateway-payload-processing/blob/main/docs/providers/vertex-ai.md"],
+        ["ExternalModel CRD", "https://github.com/opendatahub-io/models-as-a-service"]
+      ]
+    }
+  },
+  "flows": {
+    "ext": {
+      "label": "External Model (Anthropic)",
+      "steps": [
+        { "text": "1. Client sends POST /v1/chat/completions", "mode": "arrow", "from": "user", "to": "gw", "color": "#58a6ff", "num": 1, "fromRight": true, "toLeft": true, "yOff": -10 },
+        { "text": "2. Gateway → Kuadrant Wasm Shim", "mode": "arrow", "from": "gw", "to": "wasm", "color": "#58a6ff", "num": 2, "glow": "wasm", "fromBottom": true, "fromXOff": -100, "toTop": true, "toXOff": -20 },
+        { "text": "3. Auth (Authorino) validates API key", "mode": "lightup", "target": "auth", "badge": 3 },
+        { "text": "4. Kuadrant → MaaS API (key validation)", "mode": "arrow", "from": "wasm", "to": "maas", "color": "#58a6ff", "num": 4, "fromBottom": true, "fromXOff": -30, "toTop": true, "toXOff": -30 },
+        { "text": "5. MaaS API responds: key valid", "mode": "arrow", "from": "maas", "to": "wasm", "color": "#58a6ff", "num": 5, "fromTop": true, "fromXOff": 30, "toBottom": true, "toXOff": 30 },
+        { "text": "6. Rate Limit checks token quota", "mode": "lightup", "target": "rlimit", "badge": 6 },
+        { "text": "7. Kuadrant → Gateway (auth complete)", "mode": "arrow", "from": "wasm", "to": "gw", "color": "#58a6ff", "num": 7, "fromTop": true, "fromXOff": 20, "toBottom": true, "toXOff": -50 },
+        { "text": "8. Gateway → ext_proc (IPP)", "mode": "arrow", "from": "gw", "to": "ipp", "color": "#58a6ff", "num": 8, "glow": "ipp", "fromBottom": true, "fromXOff": 85, "toTop": true, "toXOff": -170 },
+        { "text": "9. request-guard: safety check (coming soon)", "mode": "lightup", "target": "p_rguard", "badge": 9 },
+        { "text": "10. intelligent-model-selection (coming soon)", "mode": "lightup", "target": "p_ims", "badge": 10 },
+        { "text": "11. model-provider-resolver: lookup ExternalModel", "mode": "lightup", "target": "p_mpr", "badge": 11 },
+        { "text": "12. body-field-to-header: extract model name", "mode": "lightup", "target": "p_bfth", "badge": 12 },
+        { "text": "13. api-translation: OpenAI → Anthropic format", "mode": "lightup", "target": "p_at_req", "badge": 13 },
+        { "text": "14. apikey-injection: inject provider credential", "mode": "lightup", "target": "p_aki", "badge": 14 },
+        { "text": "15. IPP → Gateway (mutated request)", "mode": "arrow", "from": "ipp", "to": "gw", "color": "#58a6ff", "num": 15, "fromTop": true, "fromXOff": -120, "toBottom": true, "toXOff": 135 },
+        { "text": "16. Gateway routes to Anthropic", "mode": "arrow", "from": "gw", "to": "anthropic", "color": "#58a6ff", "num": 16, "fromLeft": true, "toRight": true, "yOff": -10 },
+        { "text": "17. Anthropic responds", "mode": "arrow", "from": "anthropic", "to": "gw", "color": "#3fb950", "num": 17, "fromRight": true, "toLeft": true, "yOff": 10 },
+        { "text": "18. Gateway → IPP (response processing)", "mode": "arrow", "from": "gw", "to": "ipp", "color": "#3fb950", "num": 18, "fromBottom": true, "fromXOff": 205, "toTop": true, "toXOff": -50 },
+        { "text": "19. api-translation: Anthropic → OpenAI response", "mode": "lightup", "target": "p_at_resp", "badge": 19 },
+        { "text": "20. response-guard: safety check (coming soon)", "mode": "lightup", "target": "p_resp_guard", "badge": 20 },
+        { "text": "21. IPP → Gateway (translated response)", "mode": "arrow", "from": "ipp", "to": "gw", "color": "#3fb950", "num": 21, "fromTop": true, "fromXOff": 20, "toBottom": true, "toXOff": 275 },
+        { "text": "22. Wasm reads usage.total_tokens from response", "mode": "lightup", "target": "rlimit", "badge": 22 },
+        { "text": "23. Wasm reports token count to Limitador", "mode": "lightup", "target": "rlimit", "badge": 23 },
+        { "text": "24. Response to client (OpenAI format)", "mode": "arrow", "from": "gw", "to": "user", "color": "#3fb950", "num": 24, "fromLeft": true, "toRight": true, "yOff": 10 }
+      ]
+    },
+    "inc": {
+      "label": "Internal Model (llm-d)",
+      "steps": [
+        { "text": "1. Client sends POST /v1/chat/completions", "mode": "arrow", "from": "user", "to": "gw", "color": "#58a6ff", "num": 1, "fromRight": true, "toLeft": true, "yOff": -10 },
+        { "text": "2. Gateway → Kuadrant Wasm Shim", "mode": "arrow", "from": "gw", "to": "wasm", "color": "#58a6ff", "num": 2, "glow": "wasm", "fromBottom": true, "fromXOff": -100, "toTop": true, "toXOff": -20 },
+        { "text": "3. Auth (Authorino) validates API key", "mode": "lightup", "target": "auth", "badge": 3 },
+        { "text": "4. Kuadrant → MaaS API (key validation)", "mode": "arrow", "from": "wasm", "to": "maas", "color": "#58a6ff", "num": 4, "fromBottom": true, "fromXOff": -30, "toTop": true, "toXOff": -30 },
+        { "text": "5. MaaS API responds: key valid", "mode": "arrow", "from": "maas", "to": "wasm", "color": "#58a6ff", "num": 5, "fromTop": true, "fromXOff": 30, "toBottom": true, "toXOff": 30 },
+        { "text": "6. Rate Limit checks token quota", "mode": "lightup", "target": "rlimit", "badge": 6 },
+        { "text": "7. Kuadrant → Gateway (auth complete)", "mode": "arrow", "from": "wasm", "to": "gw", "color": "#58a6ff", "num": 7, "fromTop": true, "fromXOff": 20, "toBottom": true, "toXOff": -50 },
+        { "text": "8. Gateway → ext_proc (IPP)", "mode": "arrow", "from": "gw", "to": "ipp", "color": "#58a6ff", "num": 8, "glow": "ipp", "fromBottom": true, "fromXOff": 85, "toTop": true, "toXOff": -170 },
+        { "text": "9. request-guard: safety check (coming soon)", "mode": "lightup", "target": "p_rguard", "badge": 9 },
+        { "text": "10. intelligent-model-selection (coming soon)", "mode": "lightup", "target": "p_ims", "badge": 10 },
+        { "text": "11. model-provider-resolver: resolve InferencePool", "mode": "lightup", "target": "p_mpr", "badge": 11 },
+        { "text": "12. body-field-to-header: extract model name", "mode": "lightup", "target": "p_bfth", "badge": 12 },
+        { "text": "13. base-model-to-header: resolve LoRA base model", "mode": "lightup", "target": "p_bmth", "badge": 13 },
+        { "text": "14. IPP → Gateway (request ready)", "mode": "arrow", "from": "ipp", "to": "gw", "color": "#58a6ff", "num": 14, "fromTop": true, "fromXOff": -120, "toBottom": true, "toXOff": 135 },
+        { "text": "15. Gateway → EPP (ext_proc)", "mode": "arrow", "from": "gw", "to": "sched", "color": "#58a6ff", "num": 15, "glow": "epp", "fromBottom": true, "fromXOff": -20, "toTop": true, "toXOff": -50 },
+        { "text": "16. EPP selects P/D workers", "mode": "lightup", "target": "sched", "badge": 16 },
+        { "text": "17. EPP → Gateway (pods selected)", "mode": "arrow", "from": "sched", "to": "gw", "color": "#58a6ff", "num": 17, "fromTop": true, "fromXOff": -20, "toBottom": true, "toXOff": 15 },
+        { "text": "18. Gateway → Sidecar", "mode": "arrow", "from": "gw", "to": "sidecar", "color": "#58a6ff", "num": 18, "fromBottom": true, "fromXOff": -35, "toTop": true },
+        { "text": "19. Sidecar coordinates P/D transaction", "mode": "lightup", "target": "sidecar", "badge": 19 },
+        { "text": "20. Sidecar → Prefill Pod B", "mode": "arrow", "from": "sidecar", "to": "prefill", "color": "#58a6ff", "num": 20 },
+        { "text": "21. Prefill processing", "mode": "lightup", "target": "prefill", "badge": 21 },
+        { "text": "22. Prefill → NIXL (KVXfer metadata)", "mode": "arrow", "from": "prefill", "to": "nixl", "color": "#58a6ff", "num": 22, "fromLeft": true, "toRight": true },
+        { "text": "23. NIXL → Decode Pod A (pull KVs)", "mode": "arrow", "from": "nixl", "to": "decode", "color": "#58a6ff", "num": 23, "fromLeft": true, "toRight": true },
+        { "text": "24. Decode processing", "mode": "lightup", "target": "decode", "badge": 24 },
+        { "text": "25. Decode → Gateway (response)", "mode": "arrow", "from": "decode", "to": "gw", "color": "#3fb950", "num": 25, "fromTop": true, "toBottom": true, "toXOff": -50 },
+        { "text": "26. Gateway → EPP (response processing)", "mode": "arrow", "from": "gw", "to": "sched", "color": "#3fb950", "num": 26, "glow": "epp", "fromBottom": true, "fromXOff": 50, "toTop": true, "toXOff": 20 },
+        { "text": "27. EPP response plugins", "mode": "lightup", "target": "sched", "badge": 27 },
+        { "text": "28. EPP → Gateway (response)", "mode": "arrow", "from": "sched", "to": "gw", "color": "#3fb950", "num": 28, "fromTop": true, "fromXOff": 50, "toBottom": true, "toXOff": 85 },
+        { "text": "29. Gateway → IPP (response)", "mode": "arrow", "from": "gw", "to": "ipp", "color": "#3fb950", "num": 29, "fromBottom": true, "fromXOff": 205, "toTop": true, "toXOff": -50 },
+        { "text": "30. response-guard: safety check (coming soon)", "mode": "lightup", "target": "p_resp_guard", "badge": 30 },
+        { "text": "31. IPP → Gateway (response)", "mode": "arrow", "from": "ipp", "to": "gw", "color": "#3fb950", "num": 31, "fromTop": true, "fromXOff": 20, "toBottom": true, "toXOff": 275 },
+        { "text": "32. Wasm reads usage.total_tokens", "mode": "lightup", "target": "rlimit", "badge": 32 },
+        { "text": "33. Wasm reports token count to Limitador", "mode": "lightup", "target": "rlimit", "badge": 33 },
+        { "text": "34. Response to client (OpenAI format)", "mode": "arrow", "from": "gw", "to": "user", "color": "#3fb950", "num": 34, "fromLeft": true, "toRight": true, "yOff": 10 }
+      ]
+    },
+    "auth": {
+      "label": "Auth Failure (401)",
+      "steps": [
+        { "text": "1. Client sends POST /v1/chat/completions", "mode": "arrow", "from": "user", "to": "gw", "color": "#58a6ff", "num": 1, "fromRight": true, "toLeft": true, "yOff": -10 },
+        { "text": "2. Gateway → Kuadrant Wasm Shim", "mode": "arrow", "from": "gw", "to": "wasm", "color": "#58a6ff", "num": 2, "glow": "wasm", "fromBottom": true, "fromXOff": -100, "toTop": true, "toXOff": -20 },
+        { "text": "3. Auth (Authorino) validates API key", "mode": "lightup", "target": "auth", "badge": 3 },
+        { "text": "4. Kuadrant → MaaS API (key validation)", "mode": "arrow", "from": "wasm", "to": "maas", "color": "#58a6ff", "num": 4, "fromBottom": true, "fromXOff": -30, "toTop": true, "toXOff": -30 },
+        { "text": "5. MaaS API responds: key INVALID", "mode": "arrow", "from": "maas", "to": "wasm", "color": "#f85149", "num": 5, "fromTop": true, "fromXOff": 30, "toBottom": true, "toXOff": 30 },
+        { "text": "6. Auth rejects request", "mode": "lightup", "target": "auth", "badge": "✗", "errColor": "#f85149" },
+        { "text": "7. Kuadrant → Gateway (auth failed)", "mode": "arrow", "from": "wasm", "to": "gw", "color": "#f85149", "num": 7, "fromTop": true, "fromXOff": 20, "toBottom": true, "toXOff": -50 },
+        { "text": "8. Gateway → Client: 401 Unauthorized", "mode": "arrow", "from": "gw", "to": "user", "color": "#f85149", "num": 8, "fromLeft": true, "toRight": true, "yOff": 10 }
+      ]
+    },
+    "rl": {
+      "label": "Rate Limit (429)",
+      "steps": [
+        { "text": "1. Client sends POST /v1/chat/completions", "mode": "arrow", "from": "user", "to": "gw", "color": "#58a6ff", "num": 1, "fromRight": true, "toLeft": true, "yOff": -10 },
+        { "text": "2. Gateway → Kuadrant Wasm Shim", "mode": "arrow", "from": "gw", "to": "wasm", "color": "#58a6ff", "num": 2, "glow": "wasm", "fromBottom": true, "fromXOff": -100, "toTop": true, "toXOff": -20 },
+        { "text": "3. Auth (Authorino) validates API key", "mode": "lightup", "target": "auth", "badge": 3 },
+        { "text": "4. Kuadrant → MaaS API (key validation)", "mode": "arrow", "from": "wasm", "to": "maas", "color": "#58a6ff", "num": 4, "fromBottom": true, "fromXOff": -30, "toTop": true, "toXOff": -30 },
+        { "text": "5. MaaS API responds: key valid", "mode": "arrow", "from": "maas", "to": "wasm", "color": "#58a6ff", "num": 5, "fromTop": true, "fromXOff": 30, "toBottom": true, "toXOff": 30 },
+        { "text": "6. Rate Limit checks token quota", "mode": "lightup", "target": "rlimit", "badge": 6 },
+        { "text": "7. Limitador: quota EXCEEDED", "mode": "lightup", "target": "rlimit", "badge": "✗", "errColor": "#f85149" },
+        { "text": "8. Kuadrant → Gateway (rate limited)", "mode": "arrow", "from": "wasm", "to": "gw", "color": "#f85149", "num": 8, "fromTop": true, "fromXOff": 20, "toBottom": true, "toXOff": -50 },
+        { "text": "9. Gateway → Client: 429 Too Many Requests", "mode": "arrow", "from": "gw", "to": "user", "color": "#f85149", "num": 9, "fromLeft": true, "toRight": true, "yOff": 10 }
+      ]
+    }
+  },
+  "inspector": {
+    "initialState": {
+      "phase": "request",
+      "label": "Initial Request",
+      "headers": [
+        { "value": "POST /llm/ext-anthropic/v1/chat/completions", "style": "keep", "id": "h-path" },
+        { "value": "Authorization: Bearer sk-oai-abc123...", "style": "keep", "id": "h-auth" },
+        { "value": "Content-Type: application/json", "style": "keep", "id": "h-ct" }
+      ],
+      "body": [
+        { "value": "\"model\": \"claude-haiku-4-5-20251001\"", "style": "keep", "id": "b-model" },
+        { "value": "\"messages\": [{\"role\":\"user\",\"content\":\"Hello\"}]", "style": "keep", "id": "b-msgs" },
+        { "value": "\"max_tokens\": 100", "style": "keep", "id": "b-max" },
+        { "value": "\"stream\": false", "style": "keep", "id": "b-stream" }
+      ],
+      "cycleState": []
+    },
+    "mutations": {
+      "ext": [
+        {
+          "step": 1,
+          "label": "① Incoming Request",
+          "actions": []
+        },
+        {
+          "step": 2,
+          "label": "② Gateway → Kuadrant Wasm Shim",
+          "actions": [
+            { "id": "h-auth", "style": "highlight" }
+          ]
+        },
+        {
+          "step": 3,
+          "label": "③ Authorino validates API key",
+          "actions": [
+            { "id": "h-auth", "style": "highlight" }
+          ]
+        },
+        {
+          "step": 4,
+          "label": "④ Kuadrant → MaaS API (key validation)",
+          "actions": [
+            { "id": "h-auth", "style": "highlight" }
+          ]
+        },
+        {
+          "step": 5,
+          "label": "⑤ MaaS API responds: key valid",
+          "actions": [
+            { "id": "h-auth", "style": "highlight" },
+            { "action": "add", "target": "headers", "value": "X-MaaS-Username: cluster-admin", "id": "h-maas-user" },
+            { "action": "add", "target": "headers", "value": "X-MaaS-Subscription: ext-models-sub", "id": "h-maas-sub" }
+          ]
+        },
+        {
+          "step": 6,
+          "label": "⑥ Limitador checks token quota",
+          "actions": []
+        },
+        {
+          "step": 7,
+          "label": "⑦ Kuadrant → Gateway (auth complete)",
+          "actions": []
+        },
+        {
+          "step": 8,
+          "label": "⑧ Gateway → ext_proc (IPP)",
+          "actions": []
+        },
+        {
+          "step": 9,
+          "label": "⑨ request-guard (coming soon)",
+          "actions": []
+        },
+        {
+          "step": 10,
+          "label": "⑩ intelligent-model-selection (coming soon)",
+          "actions": []
+        },
+        {
+          "step": 11,
+          "label": "⑪ model-provider-resolver",
+          "actions": [
+            { "action": "setCycleState", "cycleState": [
+              { "value": "provider = \"anthropic\"", "style": "add", "id": "c-prov" },
+              { "value": "targetModel = \"claude-haiku-4-5-20251001\"", "style": "add", "id": "c-model" }
+            ]}
+          ]
+        },
+        {
+          "step": 12,
+          "label": "⑫ body-field-to-header",
+          "actions": [
+            { "action": "add", "target": "headers", "value": "X-Gateway-Model-Name: claude-haiku-4-5-20251001", "id": "h-xmodel" }
+          ]
+        },
+        {
+          "step": 13,
+          "label": "⑬ api-translation (request)",
+          "actions": [
+            { "id": "h-path", "style": "del" },
+            { "action": "add", "target": "headers", "value": "POST /v1/messages", "id": "h-path2" },
+            { "action": "add", "target": "headers", "value": "anthropic-version: 2023-06-01", "id": "h-aver" },
+            { "id": "h-auth", "style": "del" }
+          ]
+        },
+        {
+          "step": 14,
+          "label": "⑭ apikey-injection",
+          "actions": [
+            { "action": "add", "target": "headers", "value": "x-api-key: sk-ant-api03-xxxxx...", "id": "h-xapi" }
+          ]
+        },
+        {
+          "step": 15,
+          "label": "⑮ IPP → Gateway (mutated request)",
+          "actions": [
+            { "id": "h-path2", "style": "highlight" },
+            { "id": "h-xapi", "style": "highlight" }
+          ]
+        },
+        {
+          "step": 16,
+          "label": "⑯ Gateway routes to Anthropic",
+          "actions": []
+        },
+        {
+          "step": 17,
+          "label": "⑰ Anthropic responds",
+          "phase": "response",
+          "actions": [
+            { "action": "replaceHeaders", "headers": [
+              { "value": "HTTP/1.1 200 OK", "style": "keep", "id": "r-status" },
+              { "value": "Content-Type: application/json", "style": "keep", "id": "r-ct" }
+            ]},
+            { "action": "replaceBody", "body": [
+              { "value": "\"type\": \"message\"", "style": "keep", "id": "r-type" },
+              { "value": "\"content\": [{\"type\":\"text\",\"text\":\"Hello!\"}]", "style": "keep", "id": "r-content" },
+              { "value": "\"stop_reason\": \"end_turn\"", "style": "keep", "id": "r-stop" },
+              { "value": "\"usage\": {\"input_tokens\":8,\"output_tokens\":2}", "style": "keep", "id": "r-usage" }
+            ]},
+            { "action": "clearCycleState" }
+          ]
+        },
+        {
+          "step": 18,
+          "label": "⑱ Gateway → IPP (response)",
+          "actions": []
+        },
+        {
+          "step": 19,
+          "label": "⑲ api-translation (response)",
+          "actions": [
+            { "id": "r-type", "style": "del" },
+            { "action": "add", "target": "body", "value": "\"object\": \"chat.completion\"", "id": "r-obj" },
+            { "id": "r-content", "style": "del" },
+            { "action": "add", "target": "body", "value": "\"choices\": [{\"message\":{\"content\":\"Hello!\"}}]", "id": "r-choices" },
+            { "id": "r-stop", "style": "del" },
+            { "action": "add", "target": "body", "value": "\"finish_reason\": \"stop\"", "id": "r-finish" },
+            { "id": "r-usage", "style": "del" },
+            { "action": "add", "target": "body", "value": "\"usage\": {\"prompt_tokens\":8,\"completion_tokens\":2,\"total_tokens\":10}", "id": "r-usage2" }
+          ]
+        },
+        {
+          "step": 20,
+          "label": "⑳ response-guard (coming soon)",
+          "actions": []
+        },
+        {
+          "step": 21,
+          "label": "㉑ IPP → Gateway (translated response)",
+          "actions": [
+            { "id": "r-obj", "style": "highlight" },
+            { "id": "r-choices", "style": "highlight" }
+          ]
+        },
+        {
+          "step": 22,
+          "label": "㉒ Wasm reads usage.total_tokens",
+          "actions": [
+            { "id": "r-usage2", "style": "highlight" }
+          ]
+        },
+        {
+          "step": 23,
+          "label": "㉓ Limitador: report token count",
+          "actions": []
+        },
+        {
+          "step": 24,
+          "label": "㉔ Response to Client (OpenAI format)",
+          "actions": [
+            { "id": "r-obj", "style": "highlight" },
+            { "id": "r-choices", "style": "highlight" }
+          ]
+        }
+      ],
+      "auth": [
+        {
+          "step": 1,
+          "label": "① Incoming Request",
+          "actions": []
+        },
+        {
+          "step": 2,
+          "label": "② Gateway → Kuadrant Wasm Shim",
+          "actions": [
+            { "id": "h-auth", "style": "highlight" }
+          ]
+        },
+        {
+          "step": 3,
+          "label": "③ Authorino validates API key",
+          "actions": [
+            { "id": "h-auth", "style": "highlight" }
+          ]
+        },
+        {
+          "step": 4,
+          "label": "④ Kuadrant → MaaS API (key validation)",
+          "actions": [
+            { "id": "h-auth", "style": "highlight" }
+          ]
+        },
+        {
+          "step": 5,
+          "label": "⑤ MaaS API responds: key INVALID",
+          "actions": [
+            { "id": "h-auth", "style": "del" },
+            { "action": "replaceBody", "body": [
+              { "value": "\"valid\": false", "style": "add", "id": "b-valid" },
+              { "value": "\"error\": \"invalid_api_key\"", "style": "add", "id": "b-err" }
+            ]}
+          ]
+        },
+        {
+          "step": 6,
+          "label": "⑥ Auth REJECTS request",
+          "actions": []
+        },
+        {
+          "step": 7,
+          "label": "⑦ Kuadrant → Gateway (auth failed)",
+          "phase": "error",
+          "actions": [
+            { "action": "replaceHeaders", "headers": [
+              { "value": "HTTP/1.1 401 Unauthorized", "style": "err", "id": "r-status" },
+              { "value": "Content-Type: application/json", "style": "keep", "id": "r-ct" }
+            ]},
+            { "action": "replaceBody", "body": [
+              { "value": "\"error\": \"invalid_api_key\"", "style": "err", "id": "r-err" },
+              { "value": "\"message\": \"API key is not valid\"", "style": "err", "id": "r-msg" }
+            ]},
+            { "action": "clearCycleState" }
+          ]
+        },
+        {
+          "step": 8,
+          "label": "⑧ 401 Unauthorized → Client",
+          "actions": [
+            { "id": "r-status", "style": "highlight" }
+          ]
+        }
+      ],
+      "rl": [
+        {
+          "step": 1,
+          "label": "① Incoming Request",
+          "actions": []
+        },
+        {
+          "step": 2,
+          "label": "② Gateway → Kuadrant Wasm Shim",
+          "actions": [
+            { "id": "h-auth", "style": "highlight" }
+          ]
+        },
+        {
+          "step": 3,
+          "label": "③ Authorino validates API key",
+          "actions": [
+            { "id": "h-auth", "style": "highlight" }
+          ]
+        },
+        {
+          "step": 4,
+          "label": "④ Kuadrant → MaaS API (key validation)",
+          "actions": [
+            { "id": "h-auth", "style": "highlight" }
+          ]
+        },
+        {
+          "step": 5,
+          "label": "⑤ MaaS API responds: key valid",
+          "actions": [
+            { "id": "h-auth", "style": "highlight" },
+            { "action": "add", "target": "headers", "value": "X-MaaS-Username: cluster-admin", "id": "h-maas-user" },
+            { "action": "add", "target": "headers", "value": "X-MaaS-Subscription: ext-models-sub", "id": "h-maas-sub" }
+          ]
+        },
+        {
+          "step": 6,
+          "label": "⑥ Limitador checks token quota",
+          "actions": []
+        },
+        {
+          "step": 7,
+          "label": "⑦ Limitador: quota EXCEEDED",
+          "actions": []
+        },
+        {
+          "step": 8,
+          "label": "⑧ Kuadrant → Gateway (rate limited)",
+          "phase": "error",
+          "actions": [
+            { "action": "replaceHeaders", "headers": [
+              { "value": "HTTP/1.1 429 Too Many Requests", "style": "err", "id": "r-status" },
+              { "value": "Content-Type: application/json", "style": "keep", "id": "r-ct" },
+              { "value": "Retry-After: 60", "style": "err", "id": "r-retry" }
+            ]},
+            { "action": "replaceBody", "body": [
+              { "value": "\"error\": \"rate_limited\"", "style": "err", "id": "r-err" },
+              { "value": "\"message\": \"Token quota exceeded\"", "style": "err", "id": "r-msg" },
+              { "value": "\"retry_after\": 60", "style": "err", "id": "r-ra" }
+            ]},
+            { "action": "clearCycleState" }
+          ]
+        },
+        {
+          "step": 9,
+          "label": "⑨ 429 Too Many Requests → Client",
+          "actions": [
+            { "id": "r-status", "style": "highlight" }
+          ]
+        }
+      ],
+      "inc": [
+        {
+          "step": 1,
+          "label": "① Incoming Request",
+          "actions": []
+        },
+        {
+          "step": 2,
+          "label": "② Gateway → Kuadrant Wasm Shim",
+          "actions": [
+            { "id": "h-auth", "style": "highlight" }
+          ]
+        },
+        {
+          "step": 3,
+          "label": "③ Authorino validates API key",
+          "actions": [
+            { "id": "h-auth", "style": "highlight" }
+          ]
+        },
+        {
+          "step": 4,
+          "label": "④ Kuadrant → MaaS API (key validation)",
+          "actions": [
+            { "id": "h-auth", "style": "highlight" }
+          ]
+        },
+        {
+          "step": 5,
+          "label": "⑤ MaaS API responds: key valid",
+          "actions": [
+            { "id": "h-auth", "style": "highlight" },
+            { "action": "add", "target": "headers", "value": "X-MaaS-Username: cluster-admin", "id": "h-maas-user" },
+            { "action": "add", "target": "headers", "value": "X-MaaS-Subscription: ext-models-sub", "id": "h-maas-sub" }
+          ]
+        },
+        {
+          "step": 6,
+          "label": "⑥ Limitador checks token quota",
+          "actions": []
+        },
+        {
+          "step": 7,
+          "label": "⑦ Kuadrant → Gateway (auth complete)",
+          "actions": []
+        },
+        {
+          "step": 8,
+          "label": "⑧ Gateway → ext_proc (IPP)",
+          "actions": []
+        },
+        {
+          "step": 9,
+          "label": "⑨ request-guard (coming soon)",
+          "actions": []
+        },
+        {
+          "step": 10,
+          "label": "⑩ intelligent-model-selection (coming soon)",
+          "actions": []
+        },
+        {
+          "step": 11,
+          "label": "⑪ model-provider-resolver (InferencePool)",
+          "actions": [
+            { "action": "setCycleState", "cycleState": [
+              { "value": "type = \"inferencepool\"", "style": "add", "id": "c-prov" },
+              { "value": "pool = \"vllm-llama3-pool\"", "style": "add", "id": "c-model" }
+            ]}
+          ]
+        },
+        {
+          "step": 12,
+          "label": "⑫ body-field-to-header",
+          "actions": [
+            { "action": "add", "target": "headers", "value": "X-Gateway-Model-Name: llama-3.1-8b", "id": "h-xmodel" }
+          ]
+        },
+        {
+          "step": 13,
+          "label": "⑬ base-model-to-header",
+          "actions": [
+            { "action": "add", "target": "headers", "value": "X-Gateway-Base-Model-Name: llama-3.1-8b", "id": "h-xbase" }
+          ]
+        },
+        {
+          "step": 14,
+          "label": "⑭ IPP → Gateway (request ready)",
+          "actions": [
+            { "id": "h-xmodel", "style": "highlight" },
+            { "id": "h-xbase", "style": "highlight" }
+          ]
+        },
+        {
+          "step": 15,
+          "label": "⑮ Gateway → EPP (ext_proc)",
+          "actions": []
+        },
+        {
+          "step": 16,
+          "label": "⑯ EPP selects P/D workers",
+          "actions": []
+        },
+        {
+          "step": 17,
+          "label": "⑰ EPP → Gateway (pods selected)",
+          "actions": []
+        },
+        {
+          "step": 18,
+          "label": "⑱ Gateway → Sidecar",
+          "actions": []
+        },
+        {
+          "step": 19,
+          "label": "⑲ Sidecar coordinates P/D",
+          "actions": []
+        },
+        {
+          "step": 20,
+          "label": "⑳ Sidecar → Prefill Pod B",
+          "actions": []
+        },
+        {
+          "step": 21,
+          "label": "㉑ Prefill processing",
+          "actions": []
+        },
+        {
+          "step": 22,
+          "label": "㉒ Prefill → NIXL (KVXfer)",
+          "actions": []
+        },
+        {
+          "step": 23,
+          "label": "㉓ NIXL → Decode Pod A (pull KVs)",
+          "actions": []
+        },
+        {
+          "step": 24,
+          "label": "㉔ Decode processing",
+          "actions": []
+        },
+        {
+          "step": 25,
+          "label": "㉕ Decode → Gateway (response)",
+          "phase": "response",
+          "actions": [
+            { "action": "replaceHeaders", "headers": [
+              { "value": "HTTP/1.1 200 OK", "style": "keep", "id": "r-status" },
+              { "value": "Content-Type: application/json", "style": "keep", "id": "r-ct" }
+            ]},
+            { "action": "replaceBody", "body": [
+              { "value": "\"object\": \"chat.completion\"", "style": "keep", "id": "r-obj" },
+              { "value": "\"choices\": [{\"message\":{\"content\":\"Hello!\"}}]", "style": "keep", "id": "r-choices" },
+              { "value": "\"finish_reason\": \"stop\"", "style": "keep", "id": "r-finish" },
+              { "value": "\"usage\": {\"prompt_tokens\":8,\"completion_tokens\":2,\"total_tokens\":10}", "style": "keep", "id": "r-usage2" }
+            ]},
+            { "action": "clearCycleState" }
+          ]
+        },
+        {
+          "step": 26,
+          "label": "㉖ Gateway → EPP (response)",
+          "actions": []
+        },
+        {
+          "step": 27,
+          "label": "㉗ EPP response plugins",
+          "actions": []
+        },
+        {
+          "step": 28,
+          "label": "㉘ EPP → Gateway (response)",
+          "actions": []
+        },
+        {
+          "step": 29,
+          "label": "㉙ Gateway → IPP (response)",
+          "actions": []
+        },
+        {
+          "step": 30,
+          "label": "㉚ response-guard (coming soon)",
+          "actions": []
+        },
+        {
+          "step": 31,
+          "label": "㉛ IPP → Gateway (response)",
+          "actions": [
+            { "id": "r-obj", "style": "highlight" }
+          ]
+        },
+        {
+          "step": 32,
+          "label": "㉜ Wasm reads usage.total_tokens",
+          "actions": [
+            { "id": "r-usage2", "style": "highlight" }
+          ]
+        },
+        {
+          "step": 33,
+          "label": "㉝ Limitador: report token count",
+          "actions": []
+        },
+        {
+          "step": 34,
+          "label": "㉞ Response to Client (OpenAI format)",
+          "actions": [
+            { "id": "r-choices", "style": "highlight" }
+          ]
+        }
+      ]
+    }
+  },
+  "flowOrder": ["ext", "inc", "auth", "rl"],
+  "defaultFlow": "ext",
+  "legend": [
+    { "color": "#58a6ff", "label": "Request" },
+    { "color": "#3fb950", "label": "Response" },
+    { "color": "#f0883e", "label": "Auth / Rate Limit" },
+    { "color": "#d2a8ff", "label": "IPP Container" },
+    { "color": "linear-gradient(90deg,#58a6ff,#3fb950)", "label": "Req / Resp Plugins" }
+  ]
+}

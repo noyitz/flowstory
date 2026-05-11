@@ -1,0 +1,41 @@
+{
+  "name": "flowstory",
+  "version": "0.1.0",
+  "description": "AI-agent-first animated flow diagram framework. Define nodes, flows, and tooltips in JSON — the engine handles canvas rendering, animation, and playback.",
+  "type": "module",
+  "main": "dist/flowstory.min.js",
+  "module": "src/index.js",
+  "bin": {
+    "flowstory": "bin/cli.js"
+  },
+  "scripts": {
+    "dev": "python3 -m http.server 9000",
+    "build": "esbuild src/index.js --bundle --format=esm --minify --outfile=dist/flowstory.min.js",
+    "validate": "node bin/cli.js validate",
+    "prompt": "node bin/cli.js prompt",
+    "test": "node --test test/unit/*.spec.js",
+    "test:e2e": "npx playwright test test/e2e/",
+    "lint": "eslint src/"
+  },
+  "keywords": [
+    "diagram",
+    "flow",
+    "animation",
+    "architecture",
+    "visualization",
+    "ai-agent",
+    "canvas",
+    "step-by-step"
+  ],
+  "author": "Noy Tzikow",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/flowstory/flowstory.git"
+  },
+  "homepage": "https://flowstory.dev",
+  "devDependencies": {
+    "@playwright/test": "^1.50.0",
+    "esbuild": "^0.25.12"
+  }
+}

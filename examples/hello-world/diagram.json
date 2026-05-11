@@ -1,0 +1,107 @@
+{
+  "meta": {
+    "title": "Hello World — FlowStory"
+  },
+  "canvas": { "width": 800, "height": 400 },
+  "nodes": {
+    "client":   { "x": 20, "y": 150, "w": 100, "h": 50, "label": "Client", "type": "icon" },
+    "server":   { "x": 280, "y": 130, "w": 220, "h": 80, "label": "API Server", "sublabel": "(Express.js)", "color": "#58a6ff", "fontSize": 18 },
+    "database": { "x": 600, "y": 140, "w": 160, "h": 60, "label": "Database", "sublabel": "PostgreSQL", "color": "#3fb950", "fontSize": 16 }
+  },
+  "tooltips": {
+    "server": {
+      "title": "API Server",
+      "description": "Express.js application server handling REST API requests.",
+      "details": [
+        ["Port", "8080"],
+        ["Protocol", "HTTP/1.1"],
+        ["Auth", "JWT Bearer Token"]
+      ],
+      "links": [
+        ["Express.js Docs", "https://expressjs.com"]
+      ]
+    },
+    "database": {
+      "title": "PostgreSQL Database",
+      "description": "Primary data store for user and application data.",
+      "details": [
+        ["Engine", "PostgreSQL 16"],
+        ["Port", "5432"]
+      ],
+      "links": [
+        ["PostgreSQL Docs", "https://www.postgresql.org/docs/"]
+      ]
+    }
+  },
+  "flows": {
+    "request": {
+      "label": "Request / Response",
+      "steps": [
+        { "text": "Client sends GET /api/users", "mode": "arrow", "from": "client", "to": "server", "color": "#58a6ff", "num": 1, "fromRight": true, "toLeft": true },
+        { "text": "Server processes request", "mode": "lightup", "target": "server", "badge": 2 },
+        { "text": "Server queries database", "mode": "arrow", "from": "server", "to": "database", "color": "#58a6ff", "num": 3 },
+        { "text": "Database returns results", "mode": "arrow", "from": "database", "to": "server", "color": "#3fb950", "num": 4 },
+        { "text": "Server sends response", "mode": "arrow", "from": "server", "to": "client", "color": "#3fb950", "num": 5, "fromLeft": true, "toRight": true, "yOff": 10 }
+      ]
+    },
+    "error": {
+      "label": "Error (500)",
+      "steps": [
+        { "text": "Client sends GET /api/users", "mode": "arrow", "from": "client", "to": "server", "color": "#58a6ff", "num": 1, "fromRight": true, "toLeft": true },
+        { "text": "Server processes request", "mode": "lightup", "target": "server", "badge": 2 },
+        { "text": "Server queries database", "mode": "arrow", "from": "server", "to": "database", "color": "#58a6ff", "num": 3 },
+        { "text": "Database connection fails", "mode": "lightup", "target": "database", "badge": "✗", "errColor": "#f85149" },
+        { "text": "Server returns 500 error", "mode": "arrow", "from": "server", "to": "client", "color": "#f85149", "num": 5, "fromLeft": true, "toRight": true, "yOff": 10 }
+      ]
+    }
+  },
+  "inspector": {
+    "initialState": {
+      "phase": "request",
+      "headers": [
+        { "value": "GET /api/users", "style": "keep", "id": "h-path" },
+        { "value": "Authorization: Bearer eyJhbG...", "style": "keep", "id": "h-auth" },
+        { "value": "Accept: application/json", "style": "keep", "id": "h-accept" }
+      ],
+      "body": []
+    },
+    "mutations": {
+      "request": [
+        { "step": 1, "label": "① Client sends request" },
+        { "step": 2, "label": "② Server processes", "actions": [{ "id": "h-auth", "style": "highlight" }] },
+        { "step": 3, "label": "③ Query database" },
+        { "step": 4, "label": "④ Database returns results", "phase": "response",
+          "replaceHeaders": [
+            { "value": "HTTP/1.1 200 OK", "style": "keep", "id": "r-status" },
+            { "value": "Content-Type: application/json", "style": "keep", "id": "r-ct" }
+          ],
+          "replaceBody": [
+            { "value": "[{\"id\":1,\"name\":\"Alice\"},{\"id\":2,\"name\":\"Bob\"}]", "style": "add", "id": "r-body" }
+          ]
+        },
+        { "step": 5, "label": "⑤ Response to client", "actions": [{ "id": "r-body", "style": "highlight" }] }
+      ],
+      "error": [
+        { "step": 1, "label": "① Client sends request" },
+        { "step": 2, "label": "② Server processes", "actions": [{ "id": "h-auth", "style": "highlight" }] },
+        { "step": 3, "label": "③ Query database" },
+        { "step": 4, "label": "④ Database connection fails", "phase": "error",
+          "replaceHeaders": [
+            { "value": "HTTP/1.1 500 Internal Server Error", "style": "err", "id": "r-status" }
+          ],
+          "replaceBody": [
+            { "value": "{\"error\":\"database connection refused\"}", "style": "err", "id": "r-err" }
+          ]
+        },
+        { "step": 5, "label": "⑤ Error response to client", "actions": [{ "id": "r-err", "style": "highlight" }] }
+      ]
+    }
+  },
+  "legend": [
+    { "label": "Request", "color": "#58a6ff" },
+    { "label": "Response", "color": "#3fb950" },
+    { "label": "Error", "color": "#f85149" }
+  ],
+  "flowOrder": ["request", "error"],
+  "defaultFlow": "request"
+}
