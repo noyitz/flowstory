@@ -112,23 +112,13 @@ footer a:hover{color:var(--dim)}
 </section>
 
 <section class="demo-section">
-  <div class="demo-label">Live Example</div>
-  <a href="https://noyitz.github.io/ai-gateway-docs/ai-gateway-flow.html" target="_blank" rel="noopener" class="demo-card">
-    <div class="demo-card-left">
-      <div class="demo-card-title">AI Inference Gateway</div>
-      <div class="demo-card-subtitle">Red Hat OpenShift AI</div>
-      <div class="demo-card-stats">
-        <span>4 flows</span>
-        <span>30+ components</span>
-        <span>Interactive inspector</span>
-      </div>
-      <div class="demo-card-desc">Animated architecture diagram showing external model routing (Anthropic, OpenAI, Azure, Bedrock, Vertex), internal llm-d scheduling, auth, and rate limiting flows.</div>
-    </div>
-    <div class="demo-card-right">
-      <div class="demo-card-play">&#9654;</div>
-      <div class="demo-card-play-label">Open Demo</div>
-    </div>
-  </a>
+  <div class="demo-label">How FlowStory Works</div>
+  <div class="demo-frame" style="cursor:default">
+    <canvas id="hero-canvas" style="width:100%;height:340px;display:block"></canvas>
+  </div>
+  <div style="text-align:center;margin-top:20px">
+    <a href="https://noyitz.github.io/ai-gateway-docs/ai-gateway-flow.html" target="_blank" rel="noopener" class="btn btn-secondary" style="font-size:13px;padding:10px 24px">&#9654; See Full Example — AI Inference Gateway</a>
+  </div>
 </section>
 
 <section class="features">
@@ -225,5 +215,131 @@ footer a:hover{color:var(--dim)}
   <p>FlowStory is open source under the <a href="LICENSE">Apache 2.0 License</a>.</p>
 </footer>
 
+<script>
+(function(){
+const c=document.getElementById('hero-canvas');
+if(!c)return;
+const ctx=c.getContext('2d');
+let W,H,dpr=window.devicePixelRatio||1;
+
+function resize(){
+  const r=c.getBoundingClientRect();
+  W=r.width;H=r.height;
+  c.width=W*dpr;c.height=H*dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+resize();
+window.addEventListener('resize',resize);
+
+const nodes=[
+  {x:.08,y:.45,w:90,h:48,label:'You',sub:'describe flow',color:'#58a6ff',icon:true},
+  {x:.28,y:.45,w:110,h:48,label:'Claude Code',sub:'AI agent',color:'#d2a8ff'},
+  {x:.52,y:.45,w:100,h:48,label:'diagram.json',sub:'declarative',color:'#f0883e'},
+  {x:.76,y:.45,w:110,h:48,label:'FlowStory',sub:'engine',color:'#3fb950'},
+  {x:.52,y:.1,w:120,h:44,label:'Architecture',sub:'docs & repos',color:'#8b949e'},
+  {x:.76,y:.85,w:120,h:48,label:'Animated Flow',sub:'share anywhere',color:'#58a6ff'},
+];
+const arrows=[
+  {f:0,t:1,c:'#58a6ff',n:1},
+  {f:4,t:1,c:'#8b949e',n:2},
+  {f:1,t:2,c:'#d2a8ff',n:3},
+  {f:2,t:3,c:'#f0883e',n:4},
+  {f:3,t:5,c:'#3fb950',n:5},
+];
+
+let dots=[],lines=[],step=0,timer=null;
+
+function nx(n){return n.x*W}
+function ny(n){return n.y*H}
+
+function drawBox(n,glow){
+  const x=nx(n)-n.w/2,y=ny(n)-n.h/2;
+  ctx.save();
+  if(glow){ctx.shadowColor=n.color;ctx.shadowBlur=20;}
+  ctx.fillStyle=isDark()?'#161b22':'#f6f8fa';
+  ctx.strokeStyle=n.color;ctx.lineWidth=2;
+  ctx.beginPath();ctx.roundRect(x,y,n.w,n.h,8);ctx.fill();ctx.stroke();
+  ctx.shadowBlur=0;
+  if(n.icon){
+    ctx.font='20px system-ui';ctx.textAlign='center';ctx.fillStyle=isDark()?'#c9d1d9':'#24292f';
+    ctx.fillText('\u{1F464}',nx(n),ny(n)-2);
+  } else {
+    ctx.font='bold 13px system-ui';ctx.textAlign='center';ctx.fillStyle=isDark()?'#e2e8f0':'#24292f';
+    ctx.fillText(n.label,nx(n),ny(n)-(n.sub?4:0));
+  }
+  if(n.sub){
+    ctx.font='10px system-ui';ctx.fillStyle=isDark()?'#8b949e':'#656d76';
+    ctx.fillText(n.sub,nx(n),ny(n)+14);
+  }
+  if(n.icon){
+    ctx.font='bold 12px system-ui';ctx.fillStyle=isDark()?'#e2e8f0':'#24292f';
+    ctx.fillText(n.label,nx(n),ny(n)+n.h/2+16);
+  }
+  ctx.restore();
+}
+
+function drawArrow(a,alpha){
+  const f=nodes[a.f],t=nodes[a.t];
+  let x1=nx(f),y1=ny(f),x2=nx(t),y2=ny(t);
+  const ang=Math.atan2(y2-y1,x2-x1);
+  x1+=Math.cos(ang)*(f.w/2+4);y1+=Math.sin(ang)*(f.h/2+4);
+  x2-=Math.cos(ang)*(t.w/2+4);y2-=Math.sin(ang)*(t.h/2+4);
+  ctx.save();ctx.globalAlpha=alpha||1;
+  ctx.strokeStyle=a.c;ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+  const hl=8,ha=.4;
+  ctx.fillStyle=a.c;ctx.beginPath();
+  ctx.moveTo(x2,y2);
+  ctx.lineTo(x2-hl*Math.cos(ang-ha),y2-hl*Math.sin(ang-ha));
+  ctx.lineTo(x2-hl*Math.cos(ang+ha),y2-hl*Math.sin(ang+ha));
+  ctx.fill();
+  const mx=(x1+x2)/2,my=(y1+y2)/2;
+  ctx.fillStyle=isDark()?'#0d1117':'#fff';ctx.strokeStyle=a.c;
+  ctx.beginPath();ctx.arc(mx,my,10,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.font='bold 11px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillStyle=a.c;ctx.fillText(a.n,mx,my);
+  ctx.restore();
+}
+
+function isDark(){return !document.body.classList.contains('light')}
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  lines.forEach(a=>drawArrow(a,1));
+  nodes.forEach((n,i)=>{
+    const active=lines.some(a=>a.f===i||a.t===i);
+    drawBox(n,active);
+  });
+  dots.forEach(d=>{
+    const f=nodes[d.a.f],t=nodes[d.a.t];
+    let x1=nx(f),y1=ny(f),x2=nx(t),y2=ny(t);
+    const ang=Math.atan2(y2-y1,x2-x1);
+    x1+=Math.cos(ang)*(f.w/2+4);y1+=Math.sin(ang)*(f.h/2+4);
+    x2-=Math.cos(ang)*(t.w/2+4);y2-=Math.sin(ang)*(t.h/2+4);
+    const px=x1+(x2-x1)*d.t,py=y1+(y2-y1)*d.t;
+    ctx.save();ctx.fillStyle=d.a.c;ctx.shadowColor=d.a.c;ctx.shadowBlur=12;
+    ctx.beginPath();ctx.arc(px,py,5,0,Math.PI*2);ctx.fill();
+    ctx.restore();
+    d.t+=.018;
+    if(d.t>=1){d.done=true;lines.push(d.a);}
+  });
+  dots=dots.filter(d=>!d.done);
+  requestAnimationFrame(draw);
+}
+
+function runStep(){
+  if(step>=arrows.length){
+    setTimeout(()=>{lines=[];step=0;runStep();},2500);
+    return;
+  }
+  dots.push({a:arrows[step],t:0});
+  step++;
+  timer=setTimeout(runStep,900);
+}
+
+draw();
+setTimeout(runStep,800);
+})();
+</script>
 </body>
 </html>
