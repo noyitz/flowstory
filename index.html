@@ -76,7 +76,7 @@ body.light .demo-card-stats span{background:#0969da08;border-color:#0969da22}
 .bubble-right{background:linear-gradient(135deg,#58a6ff18,#d2a8ff18);border:1px solid #58a6ff33;border-bottom-right-radius:4px;color:var(--text)}
 .bubble .dim{color:var(--dim)}
 .bubble strong{color:var(--accent)}
-.bubble .strike{text-decoration:line-through;color:var(--muted);opacity:.7}
+.bubble .strike{text-decoration:line-through;color:#f85149;opacity:.9}
 
 /* Features */
 .features{padding:80px 24px;max-width:1100px;margin:0 auto}
@@ -124,12 +124,12 @@ footer a:hover{color:var(--dim)}
   <div style="width:100%;max-width:900px;margin:24px auto 0">
     <canvas id="hero-canvas" style="width:100%;height:300px;display:block"></canvas>
   </div>
-  <div style="text-align:center;margin:32px 0 12px">
-    <h2 style="font-size:26px;font-weight:800;margin-bottom:8px">Get Started in 2 Minutes</h2>
-    <p style="color:var(--dim);font-size:15px;margin-bottom:20px">No install. No dependencies. Just a prompt and your architecture docs.</p>
-    <a href="docs/quick-start-prompt.html" class="btn btn-primary" style="padding:14px 36px;font-size:16px">Quick Start Guide</a>
+  <div style="text-align:center;margin:28px 0 12px">
+    <h2 style="font-size:24px;font-weight:800;margin-bottom:8px">Get Started in 2 Minutes</h2>
+    <p style="color:var(--dim);font-size:14px;margin-bottom:16px">No install. No dependencies. Just a prompt and your architecture docs.</p>
+    <a href="docs/quick-start-prompt.html" class="btn btn-primary" style="padding:12px 32px;font-size:15px">Quick Start Guide</a>
   </div>
-  <div class="hero-actions" style="margin-top:16px;margin-bottom:20px">
+  <div class="hero-actions" style="margin-top:12px;margin-bottom:20px">
     <a href="https://github.com/noyitz/flowstory" class="btn btn-secondary">GitHub</a>
     <a href="https://noyitz.github.io/ai-gateway-docs/ai-gateway-flow.html" target="_blank" rel="noopener" class="btn btn-secondary">&#9654; Live Demo</a>
   </div>
@@ -139,32 +139,32 @@ footer a:hover{color:var(--dim)}
   <div class="comic-title">Meanwhile, at every engineering team...</div>
 
   <div class="bubble-row">
-    <div class="avatar avatar-blue">&#128104;</div>
+    <div class="avatar avatar-blue">&#129299;</div>
     <div class="bubble bubble-left">Hey, I need to visualize our auth flow for the design review. Know any good <span class="strike">drag-and-drop</span> diagram tools?</div>
   </div>
 
   <div class="bubble-row right">
-    <div class="avatar avatar-purple">&#128105;</div>
+    <div class="avatar avatar-purple">&#128105;&#8205;&#128187;</div>
     <div class="bubble bubble-right">It's 2026. You have an AI agent that already knows your codebase. <strong>Just describe what you want.</strong></div>
   </div>
 
   <div class="bubble-row">
-    <div class="avatar avatar-blue">&#128104;</div>
+    <div class="avatar avatar-blue">&#129299;</div>
     <div class="bubble bubble-left"><span class="dim">But I need it animated, step-by-step, with request/response details...</span></div>
   </div>
 
   <div class="bubble-row right">
-    <div class="avatar avatar-purple">&#128105;</div>
+    <div class="avatar avatar-purple">&#128105;&#8205;&#128187;</div>
     <div class="bubble bubble-right">Paste your architecture docs + one prompt into Claude Code. You'll get a fully animated flow diagram in minutes. <strong>Then iterate with screenshots.</strong></div>
   </div>
 
   <div class="bubble-row">
-    <div class="avatar avatar-blue">&#128104;</div>
+    <div class="avatar avatar-blue">&#129299;</div>
     <div class="bubble bubble-left"><span class="dim">Wait... no Figma? No draw.io? No manually dragging boxes around?</span></div>
   </div>
 
   <div class="bubble-row right">
-    <div class="avatar avatar-purple">&#128105;</div>
+    <div class="avatar avatar-purple">&#128105;&#8205;&#128187;</div>
     <div class="bubble bubble-right">That's the old way. The AI reads your docs, understands the architecture, and generates the diagram. You just tell it what to fix. <strong>Welcome to FlowStory.</strong></div>
   </div>
 </section>
@@ -432,12 +432,12 @@ function runStep(){
 // Chat bubble animation — reveal one by one when scrolled into view
 (function(){
   const rows=document.querySelectorAll('.bubble-row');
-  let revealed=0,chatTimer=null;
+  let revealed=0;
   function revealNext(){
     if(revealed>=rows.length)return;
     rows[revealed].classList.add('visible');
     revealed++;
-    if(revealed<rows.length)chatTimer=setTimeout(revealNext,800);
+    if(revealed<rows.length)setTimeout(revealNext,800);
   }
   const observer=new IntersectionObserver((entries)=>{
     entries.forEach(e=>{
@@ -447,7 +447,8 @@ function runStep(){
       }
     });
   },{threshold:0.2});
-  if(rows.length>0)observer.observe(rows[0]);
+  const comic=document.querySelector('.comic');
+  if(comic)observer.observe(comic);
 })();
 
 for(let i=0;i<8;i++)spawnAmbient();
